@@ -1,6 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-from hello_settings import SECRETS_DICT, DATA_DIR, friend_dir, posts_dir, get_posts_file_path, get_friends_file_path
+from hello_settings import OUT_DIR, SECRETS_DICT, DATA_DIR, friend_dir, posts_dir, get_posts_file_path, get_friends_file_path
 import datetime
 import os
 import re
@@ -158,5 +158,7 @@ if __name__ == '__main__':
     print '++ running web_fetch.py'
     driver = webdriver.Firefox()
     fb_login(driver)
+    time.sleep(3)
+    driver.save_screenshot(os.path.join(OUT_DIR, "after_login.png"))
     get_friends(driver=driver, user='maxhfowler')
     driver.close()

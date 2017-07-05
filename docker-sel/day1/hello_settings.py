@@ -24,6 +24,9 @@ posts_dir = os.path.join(DATA_DIR, 'posts')
 if not os.path.exists(posts_dir):
     os.makedirs(posts_dir)
 
+# output
+OUT_DIR = os.path.join(PROJECT_PATH, 'out')
+
 
 def get_posts_file_path(username):
     posts_file = os.path.join(posts_dir, username + '.txt')
