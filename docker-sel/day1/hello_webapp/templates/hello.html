@@ -1,0 +1,45 @@
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="/static/css/hello.css">
+
+    <script src="//connect.facebook.net/en_US/sdk.js"></script>
+    <script>
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId      : '1803428386579071',
+                xfbml      : true,
+                version    : 'v2.8'
+            });
+            FB.AppEvents.logPageView();
+        };
+
+        (function(d, s, id){
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) {return;}
+            js = d.createElement(s); js.id = id;
+            js.src = "//connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="/static/js/day1.js"></script>
+
+</head>
+<body>
+
+
+
+<div style="margin-left: 300px;  margin-top: 40px;">
+    <div>
+        test page
+    </div>
+    <div class="login" style="padding:10px; margin-top: 30px; border: 1px solid gray; text-align:center; width: 200px;">
+        login
+    </div>
+</div>
+
+
+</body>
+</html>
