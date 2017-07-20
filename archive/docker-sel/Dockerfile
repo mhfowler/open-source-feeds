@@ -5,8 +5,6 @@ RUN apt-get update
 RUN apt-get install -y curl firefox xvfb python-pip
 RUN pip install selenium
 RUN curl -L https://github.com/mozilla/geckodriver/releases/download/v0.17.0/geckodriver-v0.17.0-linux64.tar.gz | tar xz -C /usr/local/bin
-RUN mkdir -p /root/selenium_wd_tests
-ADD sel_wd_new_user.py /root/selenium_wd_tests
 ADD day1 /root/day1
 ADD xvfb.init /etc/init.d/xvfb
 RUN chmod +x /etc/init.d/xvfb
