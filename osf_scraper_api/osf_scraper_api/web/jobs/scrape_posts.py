@@ -6,14 +6,32 @@ from osf_scrapers.facebook.facebook_scrape import FbScraper
 
 def scrape_posts(params):
 
+    # store output that will be returned
+    output = {}
+
     # iterate through services, and scrape for each of them
-    for service, s_params in params.items():
-        _log('++ scraping service: {}'.format(service))
-        if service == 'facebook':
+    sources = params['sources']
+    for source, s_params in sources.items():
+        _log('++ scraping source: {}'.format(source))
+        if source == 'facebook':
+            # log params
             for key, val in s_params.items():
                 if key != 'password':
                     _log('{}: {}'.format(key, val))
+            # scrape posts
             fb_scraper = FbScraper(s_params)
-            fb_scraper.fb_scrape_posts()
+            fb_output = fb_scraper.fb_scrape_posts()
+            # store the output to this dictionary
+            output['facebook'] = fb_output
+        else:
+            raise Exception('++ invalid scraping service')
+
+    # write output in correct location
+    if params['output'] == 'file':
+        output_path = params['output_path']
+        with open(output_path, 'w') as f:
+            f.write(json.dumps(output))
+    else:
+        raise Exception('++ invalid output format')
 
 

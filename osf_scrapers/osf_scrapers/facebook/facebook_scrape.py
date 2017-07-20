@@ -1,7 +1,6 @@
 import datetime
 import re
 import time
-import json
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -111,6 +110,7 @@ class FbScraper():
         elem = self.driver.find_element_by_id("pass")
         elem.send_keys(self.params['password'])
         elem.send_keys(Keys.RETURN)
+        time.sleep(3)
 
     def fb_scrape_posts(self):
         """
@@ -131,13 +131,8 @@ class FbScraper():
             # store the posts in a dictionary which will be written to output later
             friends_posts[friend] = posts
 
-        # write output in correct location
-        if self.params['output'] == 'file':
-            output_path = self.params['output_path']
-            with open(output_path, 'w') as f:
-                f.write(json.dumps(self.output))
-        else:
-            raise Exception('++ invalid output format')
+        # return output
+        return self.output
 
 
 if __name__ == '__main__':
