@@ -1,12 +1,14 @@
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from hello_settings import OUT_DIR, SECRETS_DICT, DATA_DIR, friend_dir, posts_dir, get_posts_file_path, get_friends_file_path
 import datetime
+import json
 import os
+import random
 import re
 import time
-import json
-import random
+
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+
+from osf_scraper_api.hello_settings import OUT_DIR, SECRETS_DICT, friend_dir, posts_dir, get_friends_file_path
 
 usr = SECRETS_DICT['FB_USERNAME']
 pwd = SECRETS_DICT['FB_PASSWORD']

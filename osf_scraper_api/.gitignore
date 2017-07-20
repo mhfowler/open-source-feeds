@@ -1,9 +1,1 @@
-*.DS_Store
-*.swp
-*.pyc
-run.sh
-run_worker.sh
-run_scheduler.sh
-env.json
 run.md
-scripts/test.sh
