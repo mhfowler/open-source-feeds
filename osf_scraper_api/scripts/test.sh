@@ -1,2 +1,4 @@
 #!/usr/bin/env bash
-curl -X PUT -H "Content-Type: application/json" -d '{"username":"maxhfowler@gmail.com", "friends": []}' "http://127.0.0.1:5002/api/scrape_posts/"
+BASEDIR=$( cd $(dirname $0) ; pwd -P )
+echo $BASEDIR
+curl -X PUT -H "Content-Type: application/json" --data-binary "@${BASEDIR}/test.json" "http://127.0.0.1:5002/api/scrape_posts/"
