@@ -1,0 +1,2 @@
+docker_image_name: mfowler/prod_osf_scraper_api
+PALOMA_ENV: prod

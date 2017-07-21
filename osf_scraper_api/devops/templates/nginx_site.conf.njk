@@ -1,0 +1,11 @@
+server {
+
+    error_log /srv/log/nginx_error.log error;
+    access_log /srv/log/nginx_access.log;
+
+    location / {
+        include uwsgi_params;
+        uwsgi_pass unix:/srv/app/app.sock;
+    }
+
+}

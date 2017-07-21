@@ -1,2 +1,8 @@
 data/*
 geckodriver.log
+*secret_files/*
+*devops/roles/*
+*devops/build
+*devops/roles
+*devops/hosts
+*devops/secret_files

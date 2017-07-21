@@ -1,0 +1,2 @@
+docker_image_name: mfowler/staging_osf_scraper_api
+PALOMA_ENV: staging

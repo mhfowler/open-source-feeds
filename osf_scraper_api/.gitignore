@@ -1,2 +1,5 @@
 run.md
 scripts/test.json
+devops/roles
+devops/build
+devops/secret_files

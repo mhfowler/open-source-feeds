@@ -1,0 +1,18 @@
+
+- name: Log into DockerHub
+  docker_login:
+    username: "{{docker_username}}"
+    password: "{{docker_password}}"
+
+- name: deploy docker
+  docker:
+    name: paloma-api
+    image: "{{docker_image_name}}"
+    state: reloaded
+    pull: always
+    ports:
+    - "80:80"
+    - "443:443"
+    env:
+        PALOMA_ENV: "{{PALOMA_ENV}}"
+

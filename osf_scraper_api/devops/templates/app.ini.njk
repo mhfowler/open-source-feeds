@@ -1,0 +1,16 @@
+[uwsgi]
+wsgi-file = /srv/app/osf_scraper_api/wsgi.py
+
+master = true
+processes = 5
+
+logto = /srv/log/uwsgi_%n.log
+
+socket = /srv/app/app.sock
+chmod-socket = 660
+chown-socket = uwsgi-user:webgroup
+uid = uwsgi-user
+gid = webgroup
+vacuum = true
+
+die-on-term = true

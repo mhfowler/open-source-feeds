@@ -1,7 +1,7 @@
 import json
 
 from osf_scraper_api.utilities.log_helper import _log
-from osf_scrapers.facebook.facebook_scrape import FbScraper
+from osf.facebook import FbScraper
 
 
 def scrape_posts(params):
