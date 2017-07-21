@@ -21,6 +21,7 @@ RUN apt-get -y upgrade
 
 # Install Python
 RUN apt-get install -y python-dev python-pip
+RUN pip install --upgrade pip
 
 # Install other dependencies
 RUN apt-get install -y \

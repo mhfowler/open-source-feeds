@@ -19,7 +19,7 @@ def scrape_posts(params):
                 if key != 'password':
                     _log('{}: {}'.format(key, val))
             # scrape posts
-            fb_scraper = FbScraper(s_params)
+            fb_scraper = FbScraper(params=s_params, log=_log)
             fb_output = fb_scraper.fb_scrape_posts()
             # store the output to this dictionary
             output['facebook'] = fb_output
@@ -30,6 +30,8 @@ def scrape_posts(params):
     if params['output'] == 'file':
         output_path = params['output_path']
         with open(output_path, 'w') as f:
+            # TODO: remove this slack log
+            _log('++ output: {}'.format(json.dumps(output)))
             f.write(json.dumps(output))
     else:
         raise Exception('++ invalid output format')

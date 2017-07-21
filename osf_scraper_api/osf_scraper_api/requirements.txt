@@ -6,6 +6,6 @@ rq==0.8.0
 redis==2.10.5
 rq-dashboard==0.3.8
 rq-scheduler==0.7.0
--e git://github.com/mhfowler/open-source-feeds.git#egg=osf&subdirectory=osf
+git+git://github.com/mhfowler/open-source-feeds.git#egg=osf&subdirectory=osf
 uwsgi==2.0.15
 virtualenv==15.1.0

@@ -1,25 +1,18 @@
   version: '3'
   services:
     prod:
-      image: prod_osf_scraper_api
+      image: '${BUILD_ENV}_osf_scraper_api'
       build:
         context: .
         args:
-          - BUILD_ENV=prod
+          - BUILD_ENV
       ports:
         - '80:80'
         - '443:443'
+      links:
+        - redis
     redis:
       image: redis
       ports:
         - "6379"
-    staging:
-      image: staging_osf_scraper_api
-      build:
-        context: .
-        args:
-          - BUILD_ENV=staging
-      ports:
-        - '80:80'
-        - '443:443'
 

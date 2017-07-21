@@ -4,15 +4,11 @@
     username: "{{docker_username}}"
     password: "{{docker_password}}"
 
-- name: deploy docker
-  docker:
-    name: paloma-api
-    image: "{{docker_image_name}}"
-    state: reloaded
-    pull: always
-    ports:
-    - "80:80"
-    - "443:443"
-    env:
-        PALOMA_ENV: "{{PALOMA_ENV}}"
+- name: Ensure docker-compose file is up to date
+  template:
+  src: ../docker-compose.yml
+  dest: "/containers/docker-compose/my-cool-web/docker-compose.yml"
+
+- name: Run docker-compose up
+  command: /usr/local/bin/docker-compose -f /containers/docker-compose/my-cool-web/docker-compose.yml up -d
 

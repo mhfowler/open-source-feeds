@@ -14,10 +14,17 @@ class FbScraper():
     Wrapper class for scraping facebook
     """
 
-    def __init__(self, params):
+    def __init__(self, params, log=None):
         self.params = params
         self.driver = webdriver.Firefox()
         self.output = {}
+        self.log = log
+
+    def log(self, message):
+        if self.log:
+            self.log(message)
+        else:
+            print message
 
     def get_friends(self, user):
         """
@@ -26,7 +33,7 @@ class FbScraper():
         :return:
         """
         url = '{}/{}/friends'.format(BASE_URL, user)
-        print('++ getting friends for {}'.format(url))
+        self.log('++ getting friends for {}'.format(url))
         self.driver.get(url)
         time.sleep(1)
         # scroll the page a few times
@@ -34,7 +41,7 @@ class FbScraper():
         prev_num_friends = 0
         j = 0
         for i in range(0, 200):
-            # print('++ scrolling')
+            # self.log('++ scrolling')
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(1)
             friends = self.driver.find_elements_by_css_selector('.fsl a')
@@ -46,15 +53,15 @@ class FbScraper():
                 break
 
         friends = self.driver.find_elements_by_css_selector('.fsl a')
-        print '++ num friends found: {}'.format(len(friends))
+        self.log('++ num friends found: {}'.format(len(friends)))
         for friend in friends:
             friend_link = friend.get_attribute('href')
             match = re.match('https\:\/\/www\.facebook\.com/(\S+)\?.*', friend_link)
             if match:
                 username = match.group(1)
-                print('++ found {}'.format(username))
+                self.log('++ found {}'.format(username))
             else:
-                print('xx: failed on {}'.format(friend_link))
+                self.log('xx: failed on {}'.format(friend_link))
 
     def get_posts_by_user(self, user):
         """
@@ -66,13 +73,13 @@ class FbScraper():
 
         # navigate to the url of the friend
         url = '{}/{}'.format(BASE_URL, user)
-        print('++ getting posts for {}'.format(url))
+        self.log('++ getting posts for {}'.format(url))
         self.driver.get(url)
         time.sleep(4)
 
         # scroll the page a few times
         for i in range(0, 4):
-            print('++ scrolling')
+            self.log('++ scrolling')
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(1)
 
@@ -101,7 +108,7 @@ class FbScraper():
         logs into facebook
         :return:
         """
-        print '++ logging into facebook'
+        self.log('++ logging into facebook')
         self.driver.get("http://www.facebook.org")
         time.sleep(1)
         assert "Facebook" in self.driver.title
