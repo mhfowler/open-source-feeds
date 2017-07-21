@@ -9,6 +9,10 @@
       ports:
         - '80:80'
         - '443:443'
+    redis:
+      image: redis
+      ports:
+        - "6379"
     staging:
       image: staging_osf_scraper_api
       build:

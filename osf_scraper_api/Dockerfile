@@ -8,10 +8,11 @@ RUN echo "++ building Dockerfile for env: ${BUILD_ENV}"
 ENV APP_NAME osf_scraper_api
 ENV REPO_URL git@github.com:mhfowler/open-source-feeds.git
 ENV REPO_REMOTE origin
-ENV SRC_DIR /srv/app
 ENV SRV_DIR /srv
 ENV LOG_DIR /srv/log
 ENV PUBLIC_DIR /srv/public
+ENV SRC_DIR /srv/app
+ENV WDIR /srv/app/osf_scraper_api
 ENV ENV_PATH "devops/secret_files/env/${BUILD_ENV}"
 
 # Update OS
@@ -25,6 +26,7 @@ RUN apt-get install -y python-dev python-pip
 RUN apt-get install -y \
     libpq-dev \
     nginx \
+    git \
     curl
 
 # copy over nginx conf
@@ -34,6 +36,14 @@ RUN rm /etc/nginx/sites-enabled/*
 RUN ln -s \
     /etc/nginx/sites-available/app.conf \
     /etc/nginx/sites-enabled/app.conf
+
+# install selenium
+#RUN echo "deb http://ppa.launchpad.net/mozillateam/firefox-next/ubuntu trusty main" > /etc/apt/sources.list.d//mozillateam-firefox-next-trusty.list
+#RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE49EC21
+#RUN apt-get update
+#RUN apt-get install -y curl firefox xvfb python-pip
+#RUN pip install selenium
+#RUN curl -L https://github.com/mozilla/geckodriver/releases/download/v0.17.0/geckodriver-v0.17.0-linux64.tar.gz | tar xz -C /usr/local/bin
 
 # create user groups
 RUN groupadd webgroup
@@ -53,7 +63,7 @@ RUN mkdir $LOG_DIR
 COPY . $SRC_DIR
 
 # install python requirements
-RUN pip install -r "${SRC_DIR}/osf_scraper_api/requirements.txt"
+RUN pip install -r "${WDIR}/requirements.txt"
 
 # copy hellow_webapp.ini
 COPY devops/build/app.ini "${SRC_DIR}/app.ini"
@@ -66,8 +76,8 @@ COPY devops/templates/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # copy env.json
 RUN echo "++ env_path: "$ENV_PATH
-RUN rm "${SRC_DIR}/osf_scraper_api/env.json"
-COPY $ENV_PATH "${SRC_DIR}/env.json"
+RUN rm "${WDIR}/env.json"
+COPY $ENV_PATH "${WDIR}/env.json"
 
 # set file permissions
 RUN chgrp -R webgroup /srv

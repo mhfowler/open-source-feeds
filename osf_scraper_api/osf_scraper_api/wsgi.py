@@ -1,4 +1,4 @@
-from hello_webapp.app import create_app
+from osf_scraper_api.web.app import create_app
 
 application = create_app()
 
