@@ -1,6 +1,6 @@
 import json
 
-from osf_scraper_api.utilities.log_helper import _log
+from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf.scrapers.facebook import FbScraper
 
 
@@ -17,12 +17,16 @@ def scrape_posts(params):
             # log params
             for key, val in s_params.items():
                 if key != 'password':
-                    _log('{}: {}'.format(key, val))
+                    _log('++ param[{}]: {}'.format(key, val))
             # scrape posts
-            fb_scraper = FbScraper(params=s_params, log=_log)
-            fb_output = fb_scraper.fb_scrape_posts()
-            # store the output to this dictionary
-            output['facebook'] = fb_output
+            try:
+                fb_scraper = FbScraper(params=s_params, log=_log)
+                fb_output = fb_scraper.fb_scrape_posts()
+                # store the output to this dictionary
+                output['facebook'] = fb_output
+            except Exception as e:
+                _capture_exception(e)
+                output['facebook'] = None
         else:
             raise Exception('++ invalid scraping service')
 

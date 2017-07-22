@@ -7,3 +7,4 @@ run_scheduler.sh
 env.json
 run.md
 scripts/test.sh
+fetch.py

@@ -10,6 +10,7 @@ ENV REPO_URL git@github.com:mhfowler/open-source-feeds.git
 ENV REPO_REMOTE origin
 ENV SRV_DIR /srv
 ENV LOG_DIR /srv/log
+ENV DATA_DIR /srv/data
 ENV PUBLIC_DIR /srv/public
 ENV SRC_DIR /srv/app
 ENV WDIR /srv/app/osf_scraper_api
@@ -39,12 +40,16 @@ RUN ln -s \
     /etc/nginx/sites-enabled/app.conf
 
 # install selenium
-#RUN echo "deb http://ppa.launchpad.net/mozillateam/firefox-next/ubuntu trusty main" > /etc/apt/sources.list.d//mozillateam-firefox-next-trusty.list
-#RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE49EC21
-#RUN apt-get update
-#RUN apt-get install -y curl firefox xvfb python-pip
-#RUN pip install selenium
-#RUN curl -L https://github.com/mozilla/geckodriver/releases/download/v0.17.0/geckodriver-v0.17.0-linux64.tar.gz | tar xz -C /usr/local/bin
+RUN apt-get install -y firefox xvfb
+RUN echo "deb http://ppa.launchpad.net/mozillateam/firefox-next/ubuntu trusty main" > /etc/apt/sources.list.d//mozillateam-firefox-next-trusty.list
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE49EC21
+RUN apt-get update
+RUN apt-get install -y curl firefox xvfb python-pip
+RUN pip install selenium
+RUN curl -L https://github.com/mozilla/geckodriver/releases/download/v0.17.0/geckodriver-v0.17.0-linux64.tar.gz | tar xz -C /usr/local/bin
+COPY devops/templates/xvfb.init /etc/init.d/xvfb
+RUN chmod +x /etc/init.d/xvfb
+RUN update-rc.d xvfb defaults
 
 # create user groups
 RUN groupadd webgroup
@@ -59,6 +64,7 @@ COPY devops/secret_files/osf_rsa /root/.ssh/id_rsa
 
 # ensure directories
 RUN mkdir $LOG_DIR
+RUN mkdir $DATA_DIR
 
 # copy code
 COPY . $SRC_DIR
@@ -87,5 +93,6 @@ RUN chmod -R u=rwX,g=rwX,o=X /srv
 # Expose ports for nginx
 EXPOSE 80 443
 
-# start app
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# start app (xvfg is necessary for selenium, and supervisor is used to manage all other processes)
+CMD (service xvfb start; export DISPLAY=:10; /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf)
+#CMD (service xvfb start; export DISPLAY=:10; cd /srv/app; python /srv/app/osf_scraper_api/test.py)
