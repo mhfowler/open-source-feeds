@@ -19,7 +19,7 @@ class FbScraper():
         self.params = params
         # self.driver = webdriver.Firefox()
         self.driver = webdriver.Remote(
-            command_executor='selenium:4444/wd/hub',
+            command_executor='http://selenium:4444/wd/hub',
             desired_capabilities=DesiredCapabilities.FIREFOX.copy()
         )
         self.output = {}
