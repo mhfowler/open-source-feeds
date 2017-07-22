@@ -17,17 +17,19 @@ class FbScraper():
 
     def __init__(self, params, command_executor='http://selenium:4444/wd/hub', log=None):
         self.params = params
-        # self.driver = webdriver.Firefox()
-        self.driver = webdriver.Remote(
-            command_executor=command_executor,
-            desired_capabilities=DesiredCapabilities.FIREFOX.copy()
-        )
+        if command_executor:
+            self.driver = webdriver.Remote(
+                command_executor=command_executor,
+                desired_capabilities=DesiredCapabilities.FIREFOX.copy()
+            )
+        else:
+            self.driver = webdriver.Firefox()
         self.output = {}
-        self.log = log
+        self.log_fun = log
 
     def log(self, message):
-        if self.log:
-            self.log(message)
+        if self.log_fun:
+            self.log_fun(message)
         else:
             print message
 
@@ -148,5 +150,13 @@ class FbScraper():
 
 
 if __name__ == '__main__':
-    print '++ running facebook_scrape.py'
+    print '++ running fbscrape test'
+    from osf_scraper_api.settings import ENV_DICT
+    fbscraper = FbScraper({
+        'username': ENV_DICT['FB_USERNAME'],
+        'password': ENV_DICT['FB_PASSWORD'],
+        'friends': ENV_DICT['FB_FRIENDS'],
+    }, command_executor=None)
+    import json
+    print json.dumps(fbscraper.fb_scrape_posts())
 

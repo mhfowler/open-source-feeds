@@ -1,5 +1,2 @@
 [staging-servers]
-40.71.203.189 ansible_ssh_user=paloma ansible_ssh_private_key_file=secret_files/osf_scraper_api/rsa
-
-[prod-servers]
-52.179.21.162 ansible_ssh_user=paloma ansible_ssh_private_key_file=secret_files/osf_scraper_api/rsa
+23.20.159.171 ansible_ssh_user=ubuntu ansible_ssh_private_key_file=secret_files/osf.pem

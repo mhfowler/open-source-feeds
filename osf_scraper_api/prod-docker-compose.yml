@@ -1,0 +1,18 @@
+  version: '3'
+  services:
+    osf_scraper_api:
+      image: 'mfowler/${BUILD_ENV}_osf_scraper_api'
+      ports:
+        - '80:80'
+        - '443:443'
+      links:
+        - redis
+        - selenium
+    redis:
+      image: redis
+      ports:
+        - "6379"
+    selenium:
+      image: selenium/standalone-firefox
+      ports:
+        - "4444:4444"

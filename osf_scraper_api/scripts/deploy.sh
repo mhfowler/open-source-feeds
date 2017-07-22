@@ -7,7 +7,7 @@ cd $BASEDIR
 $BASEDIR/bash/deploy/build.sh $BUILD_ENV
 
 # deploy to docker hub
-docker tag $BUILD_ENV_osf_scraper_api "mfowler/$BUILD_ENV_osf_scraper_api "
+docker tag $BUILD_ENV_osf_scraper_api "mfowler/$BUILD_ENV_osf_scraper_api"
 docker push "mfowler/$BUILD_ENV_osf_scraper_api"
 
 # use ansible to deploy the docker image in the cloud

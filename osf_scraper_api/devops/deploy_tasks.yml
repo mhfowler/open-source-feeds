@@ -4,11 +4,12 @@
     username: "{{docker_username}}"
     password: "{{docker_password}}"
 
+- name: ensure srv directory
+  action: file dest=/srv state=directory
+
 - name: Ensure docker-compose file is up to date
-  template:
-  src: ../docker-compose.yml
-  dest: "/containers/docker-compose/my-cool-web/docker-compose.yml"
+  action: template src=/Users/maxfowler/computer/projects/opensourcefeeds/osf_scraper_api/prod-docker-compose.yml dest=/srv/docker-compose.yml
 
 - name: Run docker-compose up
-  command: /usr/local/bin/docker-compose -f /containers/docker-compose/my-cool-web/docker-compose.yml up -d
+  command: BUILD_ENV="{{BUILD_ENV}}" /usr/local/bin/docker-compose -f /srv/docker-compose.yml up
 
