@@ -34,3 +34,16 @@ def _capture_exception(e):
     _log(formatted_lines, channel_name='_error')
     if ENV_DICT.get('SENTRY_DSN'):
         sentry.captureException()
+
+
+def _capture_rq_exception(exc_type, exc_value, exc_traceback):
+    """
+    rq exception doesn't provide exception object, so we use these values instead
+    :return: None
+    """
+    # log exception to slack
+    formatted_lines = traceback.format_exc()
+    _log('@channel: error: {}'.format(exc_value), channel_name='_error')
+    _log(formatted_lines, channel_name='_error')
+    if ENV_DICT.get('SENTRY_DSN'):
+        sentry.captureException()

@@ -7,6 +7,7 @@ from redis import StrictRedis
 from rq import Worker, Queue, Connection
 
 from osf_scraper_api.settings import ENV_DICT
+from osf_scraper_api.utilities.log_helper import _capture_rq_exception
 
 redis_connection = StrictRedis(
     host=ENV_DICT.get('REDIS_HOST'),
@@ -21,11 +22,15 @@ queues = None
 
 
 def retry_handler(job, exc_type, exc_value, traceback):
-    # if the job is not marked for retry, fall through to the default
-    # exception handler that will move the job to the 'failed' queue
+    # try to log the exception
+    try:
+        _capture_rq_exception(exc_type=exc_type, exc_value=exc_value, exc_traceback=traceback)
+    except:
+        pass
+    # and then regardless, return True, such that exception gets passed
+    # to the next handler which puts it in the failed queue
     job.refresh()
-    if not job.meta.get('retry'):
-        return True
+    return True
 
 
 if __name__ == '__main__':

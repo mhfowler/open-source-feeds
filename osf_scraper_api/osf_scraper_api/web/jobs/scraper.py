@@ -42,14 +42,14 @@ def scrape_posts(params):
             raise Exception('++ invalid scraping service')
 
     # write output in correct location
-    if params['output'] == 'file':
-        output_path = params['output_path']
-        with open(output_path, 'w') as f:
-            # TODO: remove this slack log
-            _log('++ output: {}'.format(json.dumps(output)))
+    # TODO: remove this slack log
+    _log('++ output: {}'.format(json.dumps(output)))
+    # if params['output'] == 'file':
+    #     output_path = params.get('output_path')
+        # with open(output_path, 'w') as f:
             # f.write(json.dumps(output))
-    else:
-        raise Exception('++ invalid output format')
+    # else:
+    #     raise Exception('++ invalid output format')
 
 
 def scrape_friends(params):
@@ -77,12 +77,11 @@ def scrape_friends(params):
         # quit driver
         fb_scraper.quit_driver()
 
-    # write output in correct location
-    if params['output'] == 'file':
-        output_path = params['output_path']
-        with open(output_path, 'w') as f:
-            # TODO: remove this slack log
-            _log('++ output: {}'.format(json.dumps(output)))
+    # TODO: remove this slack log
+    _log('++ output: {}'.format(json.dumps(output)))
+    # if params['output'] == 'file':
+    #     output_path = params.get('output_path')
+        # with open(output_path, 'w') as f:
             # f.write(json.dumps(output))
-    else:
-        raise Exception('++ invalid output format')
+    # else:
+    #     raise Exception('++ invalid output format')
