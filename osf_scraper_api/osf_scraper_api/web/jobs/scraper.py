@@ -47,7 +47,7 @@ def scrape_posts(params):
         with open(output_path, 'w') as f:
             # TODO: remove this slack log
             _log('++ output: {}'.format(json.dumps(output)))
-            f.write(json.dumps(output))
+            # f.write(json.dumps(output))
     else:
         raise Exception('++ invalid output format')
 
@@ -83,6 +83,6 @@ def scrape_friends(params):
         with open(output_path, 'w') as f:
             # TODO: remove this slack log
             _log('++ output: {}'.format(json.dumps(output)))
-            f.write(json.dumps(output))
+            # f.write(json.dumps(output))
     else:
         raise Exception('++ invalid output format')
