@@ -15,8 +15,10 @@ class FbScraper():
     Wrapper class for scraping facebook
     """
 
-    def __init__(self, params, command_executor='http://selenium:4444/wd/hub', log=None):
-        self.params = params
+    def __init__(self, fb_username, fb_password, command_executor=None, log=None):
+        self.fb_username = fb_username
+        self.fb_password = fb_password
+        self.logged_in = False
         if command_executor:
             self.driver = webdriver.Remote(
                 command_executor=command_executor,
@@ -39,6 +41,13 @@ class FbScraper():
         :param user:
         :return:
         """
+        if not self.logged_in:
+            self.fb_login()
+
+        # this is the list we will populate
+        usernames = []
+
+        # navigate to friends url
         url = '{}/{}/friends'.format(BASE_URL, user)
         self.log('++ getting friends for {}'.format(url))
         self.driver.get(url)
@@ -48,7 +57,7 @@ class FbScraper():
         prev_num_friends = 0
         j = 0
         for i in range(0, 200):
-            # self.log('++ scrolling')
+            self.log('++ scrolling {}'.format(i))
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(1)
             friends = self.driver.find_elements_by_css_selector('.fsl a')
@@ -66,9 +75,14 @@ class FbScraper():
             match = re.match('https\:\/\/www\.facebook\.com/(\S+)\?.*', friend_link)
             if match:
                 username = match.group(1)
-                self.log('++ found {}'.format(username))
+                usernames.append(username)
+                # self.log('++ found {}'.format(username))
             else:
-                self.log('xx: failed on {}'.format(friend_link))
+                pass
+                # self.log('xx: failed on {}'.format(friend_link))
+
+        # return usernames
+        return usernames
 
     def get_posts_by_user(self, user):
         """
@@ -76,6 +90,10 @@ class FbScraper():
         :param user:
         :return:
         """
+        if not self.logged_in:
+            self.fb_login()
+
+        # list to store posts in
         to_return = []
 
         # navigate to the url of the friend
@@ -120,43 +138,47 @@ class FbScraper():
         time.sleep(1)
         assert "Facebook" in self.driver.title
         elem = self.driver.find_element_by_id("email")
-        elem.send_keys(self.params['username'])
+        elem.send_keys(self.fb_username)
         elem = self.driver.find_element_by_id("pass")
-        elem.send_keys(self.params['password'])
+        elem.send_keys(self.fb_password)
         elem.send_keys(Keys.RETURN)
         time.sleep(3)
+        self.logged_in = True
 
-    def fb_scrape_posts(self):
+    def get_posts(self, params):
         """
-        scrapes based on params FbScraper was initialized with
-        and writes the found data in the correct place
+        :param params: a dictionary which can have the following keys
+        - users (a list of usernames of which to scrape posts from)
         :return:
         """
 
         # log into facebook
-        self.fb_login()
+        if not self.logged_in:
+            self.fb_login()
 
-        # fetch posts for friends
-        friends = self.params['friends']
-        friends_posts = {}
-        self.output['friends_posts'] = friends_posts
-        for friend in friends:
-            posts = self.get_posts_by_user(friend)
+        # fetch posts for each given user
+        users = params['users']
+        posts = {}
+        self.output['posts'] = posts
+        for user in users:
+            user_posts = self.get_posts_by_user(user)
             # store the posts in a dictionary which will be written to output later
-            friends_posts[friend] = posts
+            posts[user] = user_posts
 
         # return output
         return self.output
+
+    def quit_driver(self):
+        self.driver.quit()
 
 
 if __name__ == '__main__':
     print '++ running fbscrape test'
     from osf_scraper_api.settings import ENV_DICT
-    fbscraper = FbScraper({
-        'username': ENV_DICT['FB_USERNAME'],
-        'password': ENV_DICT['FB_PASSWORD'],
-        'friends': ENV_DICT['FB_FRIENDS'],
-    }, command_executor=None)
+    fbscraper = FbScraper(
+        fb_username=ENV_DICT['FB_USERNAME'],
+        fb_password=ENV_DICT['FB_PASSWORD'],
+        command_executor=None)
     import json
-    print json.dumps(fbscraper.fb_scrape_posts())
+    print json.dumps(fbscraper.get_posts({'users': ENV_DICT['FB_FRIENDS']}))
 

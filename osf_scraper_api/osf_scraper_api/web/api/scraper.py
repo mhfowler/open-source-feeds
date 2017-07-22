@@ -1,5 +1,5 @@
 from flask import make_response, jsonify, Blueprint, request
-from osf_scraper_api.web.jobs.scrape_posts import scrape_posts
+from osf_scraper_api.web.jobs.scraper import scrape_posts, scrape_friends
 from osf_scraper_api.web.jobs.test_rq import test_rq
 
 from osf_scraper_api.settings import TEMPLATE_DIR
@@ -19,6 +19,14 @@ def get_scraper_blueprint(osf_queue):
     def scrape_posts_endpoint():
         params = request.get_json()
         osf_queue.enqueue(scrape_posts, params)
+        return make_response(jsonify({
+            'message': 'Job enqueued for scraping.'
+        }), 200)
+
+    @scraper_blueprint.route('/api/scrape_friends/', methods=['PUT'])
+    def scrape_friends_endpoint():
+        params = request.get_json()
+        osf_queue.enqueue(scrape_friends, params)
         return make_response(jsonify({
             'message': 'Job enqueued for scraping.'
         }), 200)

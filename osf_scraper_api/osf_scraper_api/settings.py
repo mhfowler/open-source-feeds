@@ -37,3 +37,9 @@ ENV_DICT = json.loads(open(ENV_PATH, "r").read())
 # paths
 FLASK_DIR = os.path.join(PROJECT_PATH, 'hello_webapp')
 TEMPLATE_DIR = os.path.join(PROJECT_PATH, 'templates')
+
+# settings
+SELENIUM_URL = ENV_DICT.get('SELENIUM_URL')
+print 'SELENIUM_URL: {}'.format(SELENIUM_URL)
+
+DEFAULT_JOB_TIMEOUT = 300

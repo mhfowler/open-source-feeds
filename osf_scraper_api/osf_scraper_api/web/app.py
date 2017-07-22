@@ -3,7 +3,7 @@ from flask import Flask, Response, request, render_template
 from redis import StrictRedis
 from rq import Queue
 
-from osf_scraper_api.settings import PROJECT_PATH, TEMPLATE_DIR, ENV_DICT
+from osf_scraper_api.settings import PROJECT_PATH, TEMPLATE_DIR, ENV_DICT, DEFAULT_JOB_TIMEOUT
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.web.api.helper import get_helpers_blueprint
 from osf_scraper_api.web.api.scraper import get_scraper_blueprint
@@ -31,7 +31,7 @@ def create_app():
         db=ENV_DICT.get('REDIS_DB'),
         password=ENV_DICT.get('REDIS_PASSWORD')
     )
-    osf_queue = Queue('osf', connection=redis_connection)
+    osf_queue = Queue('osf', connection=redis_connection, default_timeout=DEFAULT_JOB_TIMEOUT)
 
     # add basic auth to rq_dashboard blueprint
     @rq_dashboard.blueprint.before_request
