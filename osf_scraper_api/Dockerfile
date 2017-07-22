@@ -69,9 +69,6 @@ RUN mkdir $DATA_DIR
 # copy code
 COPY . $SRC_DIR
 
-# install python requirements
-RUN pip install -r "${WDIR}/requirements.txt"
-
 # copy hellow_webapp.ini
 COPY devops/build/app.ini "${SRC_DIR}/app.ini"
 
@@ -90,9 +87,12 @@ COPY $ENV_PATH "${WDIR}/env.json"
 RUN chgrp -R webgroup /srv
 RUN chmod -R u=rwX,g=rwX,o=X /srv
 
+# install python requirements
+RUN pip install -r "${WDIR}/requirements.txt"
+
 # Expose ports for nginx
 EXPOSE 80 443
 
 # start app (xvfg is necessary for selenium, and supervisor is used to manage all other processes)
-CMD (service xvfb start; export DISPLAY=:10; /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf)
+CMD (/usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf)
 #CMD (service xvfb start; export DISPLAY=:10; cd /srv/app; python /srv/app/osf_scraper_api/test.py)

@@ -15,11 +15,11 @@ class FbScraper():
     Wrapper class for scraping facebook
     """
 
-    def __init__(self, params, log=None):
+    def __init__(self, params, command_executor='http://selenium:4444/wd/hub', log=None):
         self.params = params
         # self.driver = webdriver.Firefox()
         self.driver = webdriver.Remote(
-            command_executor='http://selenium:4444/wd/hub',
+            command_executor=command_executor,
             desired_capabilities=DesiredCapabilities.FIREFOX.copy()
         )
         self.output = {}

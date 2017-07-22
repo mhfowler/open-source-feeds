@@ -20,7 +20,7 @@ def scrape_posts(params):
                     _log('++ param[{}]: {}'.format(key, val))
             # scrape posts
             try:
-                fb_scraper = FbScraper(params=s_params, log=_log)
+                fb_scraper = FbScraper(params=s_params, command_executor='http://selenium:4444/wd/hub', log=_log)
                 fb_output = fb_scraper.fb_scrape_posts()
                 # store the output to this dictionary
                 output['facebook'] = fb_output
