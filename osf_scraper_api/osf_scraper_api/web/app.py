@@ -7,7 +7,7 @@ from osf_scraper_api.settings import PROJECT_PATH, TEMPLATE_DIR, ENV_DICT, DEFAU
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.web.api.helper import get_helpers_blueprint
 from osf_scraper_api.web.api.scraper import get_scraper_blueprint
-from osf_scraper_api.web.extensions import sentry
+from osf_scraper_api.web.extensions import sentry, mail
 
 
 # create flask app
@@ -45,6 +45,19 @@ def create_app():
                 401,
                 {'WWW-Authenticate': 'Basic realm="RQ Dashboard"'}
             )
+
+    # initialize flask-mail
+    mail_keys = [
+        "MAIL_SERVER",
+        "MAIL_PORT",
+        "MAIL_USE_TLS",
+        "MAIL_USERNAME",
+        "MAIL_PASSWORD",
+        "MAIL_DEFAULT_SENDER"
+    ]
+    for key in mail_keys:
+        app.config[key] = ENV_DICT[key]
+    mail.init_app(app)
 
     # register blueprints
     app.register_blueprint(get_helpers_blueprint())

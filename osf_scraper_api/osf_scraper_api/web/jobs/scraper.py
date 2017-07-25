@@ -1,8 +1,11 @@
 import json
+import time
+import os
 
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf.scrapers.facebook import FbScraper
-from osf_scraper_api.settings import SELENIUM_URL
+from osf_scraper_api.utilities.email_helper import send_email
+from osf_scraper_api.settings import SELENIUM_URL, DATA_DIR
 
 
 def scraper_job(method, params):
@@ -24,13 +27,34 @@ class OsfScraper:
     def write_output(self, output):
         if self.send_to:
             # if there was an error internally, then don't send output, just send an error message
-            print '++ send email to: {}'.format(self.send_to)
+            _log('++ emailing results to: {}'.format(self.send_to))
+            # write the results to a temporary file
+            tmp_name = '{}-{}.json'.format(self.send_to, int(time.time()))
+            attachment_path = os.path.join(DATA_DIR, tmp_name)
+            with open(attachment_path, 'w') as f:
+                f.write(json.dumps(output))
+            # email the file to the user as an attachment
+            t_vars = {}
+            send_email(
+                to_email=self.send_to,
+                subject='Open Source Feeds: Facebook',
+                template_path='emails/osf_results.html',
+                template_vars=t_vars,
+                attachment_path=attachment_path
+            )
         else:
             _log('++ output: {}'.format(json.dumps(output)))
 
     def send_error_message(self, error_message=None):
         if self.send_to:
-            print '++ send email with error'
+            _log('++ sending error message to: {}'.format(self.send_to))
+            t_vars = {}
+            send_email(
+                to_email=self.send_to,
+                subject='OSF Error',
+                template_path='emails/osf_error.html',
+                template_vars=t_vars
+            )
         else:
             _log('++ error: {}'.format(error_message))
 

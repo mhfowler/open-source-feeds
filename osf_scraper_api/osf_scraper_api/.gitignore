@@ -9,3 +9,4 @@ run.md
 scripts/test.sh
 fetch.py
 devops/hosts
+data/*

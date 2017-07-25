@@ -38,4 +38,7 @@ if __name__ == '__main__':
         queues = map(Queue, sys.argv[1:]) or [Queue()]
         worker = Worker(queues)
         worker.push_exc_handler(retry_handler)
-        worker.work()
+        from osf_scraper_api.web.app import create_app
+        app = create_app()
+        with app.app_context():
+            worker.work()

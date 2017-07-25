@@ -9,3 +9,4 @@ rq-scheduler==0.7.0
 git+git://github.com/mhfowler/open-source-feeds.git#egg=osf&subdirectory=osf
 uwsgi==2.0.15
 virtualenv==15.1.0
+flask-mail==0.9.1
