@@ -35,7 +35,19 @@ class FbScraper():
         else:
             print message
 
-    def get_friends(self, user):
+    def get_friends(self, users):
+        """
+        for each user, in list of users, get all of their friends
+        :param users: list of strings of usernames
+        :return:
+        """
+        output = {}
+        for user in users:
+            u_output = self.get_friends_of_user(user)
+            output[user] = u_output
+        return output
+
+    def get_friends_of_user(self, user):
         """
         gets the friends of the given user
         :param user:
