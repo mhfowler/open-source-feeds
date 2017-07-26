@@ -1,6 +1,7 @@
 import json
 import time
 import os
+import datetime
 
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf.scrapers.facebook import FbScraper
@@ -81,8 +82,19 @@ class OsfScraper:
                 )
                 try:
                     if method == 'posts':
+                        # parse after_timestamp if supplied
+                        after_date = None
+                        if s_params.get('after_timestamp'):
+                            after_timestamp = s_params.get('after_timestamp')
+                            try:
+                                after_date = datetime.datetime.fromtimestamp(int(after_timestamp))
+                            except:
+                                _log('++ warning: unable to parse timestamp {}'.format(after_timestamp))
+                        # then call function
                         fb_output = fb_scraper.get_posts({
-                            'users': s_params['users']
+                            'users': s_params['users'],
+                            'max_num_posts_per_user': s_params.get('max_num_posts_per_user'),
+                            'after_date': after_date,
                         })
                     elif method == 'friends':
                         fb_output = fb_scraper.get_friends(users=s_params['users'])
