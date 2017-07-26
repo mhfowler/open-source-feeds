@@ -104,7 +104,7 @@ class FbScraper():
     Wrapper class for scraping facebook
     """
 
-    def __init__(self, fb_username, fb_password, command_executor=None, log=None):
+    def __init__(self, fb_username, fb_password, command_executor=None, driver=None, log=None):
         self.fb_username = fb_username
         self.fb_password = fb_password
         self.logged_in = False
@@ -114,7 +114,12 @@ class FbScraper():
                 desired_capabilities=DesiredCapabilities.FIREFOX.copy()
             )
         else:
-            self.driver = webdriver.Firefox()
+            # chrome is default driver
+            if not driver:
+                self.driver = webdriver.Chrome()
+            # otherwise use the driver passed in
+            else:
+                self.driver = driver
         self.output = {}
         self.log_fun = log
 
@@ -123,6 +128,17 @@ class FbScraper():
             self.log_fun(message)
         else:
             print message
+
+    def close_dialogs(self):
+        """
+        clicks away from notifications that may be blocking the screen
+        :return:
+        """
+        notifications = self.driver.find_elements_by_css_selector('.layerCancel._4jy0')
+        if notifications:
+            for notification in notifications:
+                notification.click()
+                time.sleep(4)
 
     def get_friends(self, users):
         """
@@ -144,6 +160,7 @@ class FbScraper():
         """
         if not self.logged_in:
             self.fb_login()
+        self.close_dialogs()
 
         # this is the list we will populate
         usernames = []
@@ -193,6 +210,7 @@ class FbScraper():
         """
         if not self.logged_in:
             self.fb_login()
+        self.close_dialogs()
 
         # convert after_date to timestamp
         if after_date:
@@ -311,6 +329,7 @@ class FbScraper():
         # log into facebook
         if not self.logged_in:
             self.fb_login()
+        self.close_dialogs()
 
         # fetch posts for each given user
         users = params['users']

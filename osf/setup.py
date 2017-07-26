@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='osf',
-    version='0.0.3',
+    version='0.0.4',
     description='python interface to different feeds',
     url='https://github.com/mhfowler/open-source-feeds',
     author='Max Fowler (@notplants)',
