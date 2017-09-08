@@ -7,6 +7,7 @@ from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf.scrapers.facebook import FbScraper
 from osf_scraper_api.utilities.email_helper import send_email
 from osf_scraper_api.settings import SELENIUM_URL, DATA_DIR
+from osf_scraper_api.utilities.fs_helper import save_dict
 
 
 def scraper_job(method, params):
@@ -24,8 +25,24 @@ class OsfScraper:
     def __init__(self, params):
         self.params = params
         self.send_to = params.get('send_to')
+        self.time = int(time.time())
+
+    def get_requestor_username(self):
+        """
+        initially this will be determined by a username supplied in the request,
+        in the future this may be based on some kind of authentication token in the request
+        :return:
+        """
+        return self.params.get('username')
 
     def write_output(self, output):
+        # save the output to the fs
+        f_name = '{}.json'.format(self.time)
+        username = self.get_requestor_username()
+        f_path = 'posts/{}/{}'.format(username, f_name)
+        _log('++ saving results to: {}'.format(f_path))
+        save_dict(data_dict=output, destination=f_path)
+        # other forms of optional output
         if self.send_to:
             # if there was an error internally, then don't send output, just send an error message
             _log('++ emailing results to: {}'.format(self.send_to))

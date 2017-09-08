@@ -300,6 +300,7 @@ class FbScraper():
             to_return.append(post)
 
         # return the list of posts
+        self.log('++ found {} posts'.format(len(to_return)))
         return to_return
 
     def fb_login(self):
