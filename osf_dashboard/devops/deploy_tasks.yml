@@ -1,0 +1,18 @@
+
+- name: Log into DockerHub
+  command: docker login -u "{{docker_username}}" -p "{{docker_password}}"
+
+- name: ensure srv directory
+  action: file dest=/srv state=directory
+
+- name: Ensure docker-compose file is up to date
+  action: template src=/Users/maxfowler/computer/projects/opensourcefeeds/osf_dashboard/prod-docker-compose.yml dest=/srv/docker-compose.yml
+
+- name: Run docker-compose down
+  command: /usr/local/bin/docker-compose -f /srv/docker-compose.yml down
+
+- name: Run docker-compose pull
+  command: /usr/local/bin/docker-compose -f /srv/docker-compose.yml pull
+
+- name: Run docker-compose up
+  command: /usr/local/bin/docker-compose -f /srv/docker-compose.yml up -d

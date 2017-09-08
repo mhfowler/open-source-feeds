@@ -1,0 +1,15 @@
+{
+  "sources": {
+    "facebook": {
+      "username": "fbusername",
+      "password": "fbpass",
+      "friends": [
+        "person1",
+        "person2",
+        "person3"
+      ]
+    }
+  },
+  "output": "file",
+  "output_path": "/path/to/file.json"
+}
