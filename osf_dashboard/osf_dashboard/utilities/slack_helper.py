@@ -2,7 +2,7 @@ import json
 
 from slackclient import SlackClient
 
-from osf_scraper_api.settings import ENV_DICT
+from osf_dashboard.settings import ENV_DICT
 
 
 def list_channels():
@@ -43,7 +43,7 @@ def slack_notify_message(message, channel_name=None):
     sc = SlackClient(bot_token)
 
     # if a suffix is specified for this environment, add suffix to channel_name
-    cname = channel_name or '_osf_scraper_api'
+    cname = channel_name or '_osf_dashboard'
     slack_suffix = ENV_DICT.get('SLACK_CHANNEL_SUFFIX')
     if slack_suffix:
         cname += slack_suffix

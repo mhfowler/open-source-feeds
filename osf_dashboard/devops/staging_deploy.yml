@@ -1,0 +1,13 @@
+- hosts: staging-servers
+  become: yes
+  become_user: root
+  environment:
+    BUILD_ENV: staging
+
+  tasks:
+
+    - include_vars: secret_files/vars.yml
+
+    - include_vars: staging_vars.yml
+
+    - include: deploy_tasks.yml
