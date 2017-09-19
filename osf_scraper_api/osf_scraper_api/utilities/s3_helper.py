@@ -28,6 +28,20 @@ def s3_get_file_as_string(s3_path):
     return content
 
 
+def s3_key_exists(s3_path):
+    """
+    returns True if the given s3_path already exists in s3
+    :param s3_path: string of key to test existence of
+    :return: boolean
+    """
+    bucket = get_s3_bucket()
+    objs = list(bucket.objects.filter(Prefix=s3_path))
+    if len(objs) > 0 and objs[0].key == s3_path:
+        return True
+    else:
+        return False
+
+
 if __name__ == '__main__':
 
     # Upload a new file

@@ -2,7 +2,7 @@ import json
 import tempfile
 
 from osf_scraper_api.settings import ENV_DICT
-from osf_scraper_api.utilities.s3_helper import s3_upload_file, s3_get_file_as_string
+from osf_scraper_api.utilities.s3_helper import s3_upload_file, s3_get_file_as_string, s3_key_exists
 
 
 def save_dict(data_dict, destination):
@@ -27,6 +27,13 @@ def get_file_as_string(path):
 def save_file(f_path, destination):
     if ENV_DICT['FS_BIN_TYPE'] == 'S3':
         s3_upload_file(source_file_path=f_path, destination=destination)
+    else:
+        raise Exception('++ invalid FS_BIN_TYPE: {}'.format(ENV_DICT['FS_BIN_TYPE']))
+
+
+def file_exists(f_path):
+    if ENV_DICT['FS_BIN_TYPE'] == 'S3':
+        return s3_key_exists(s3_path=f_path)
     else:
         raise Exception('++ invalid FS_BIN_TYPE: {}'.format(ENV_DICT['FS_BIN_TYPE']))
 

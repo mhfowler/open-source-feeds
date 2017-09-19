@@ -11,6 +11,7 @@ from osf_scraper_api.utilities.fs_helper import save_dict
 
 
 def scraper_job(method, params):
+    _log('++ starting scrape {} job'.format(method))
     scraper = OsfScraper(params)
     try:
         output = scraper.scrape_helper(method=method)
