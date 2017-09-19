@@ -23,6 +23,7 @@ def idempotent_scrape_friends(job_name, users, fb_username, fb_password):
         output_dict = fb_scraper.get_friends(users=[user])
         save_dict(output_dict, key_name)
         _log('++ data saved to {}'.format(key_name))
+    _log('++ request complete')
 
 
 def idempotent_scrape_posts(job_name, users, fb_username, fb_password, scraper_params):
@@ -45,3 +46,4 @@ def idempotent_scrape_posts(job_name, users, fb_username, fb_password, scraper_p
         output_dict = fb_scraper.get_posts(scraper_params)
         save_dict(output_dict, key_name)
         _log('++ data saved to {}'.format(key_name))
+    _log('++ request complete')

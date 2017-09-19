@@ -1,2 +1,2 @@
 [staging-servers]
-54.198.83.153 ansible_ssh_user=ubuntu ansible_ssh_private_key_file=secret_files/osf.pem
+54.226.31.5 ansible_ssh_user=ubuntu ansible_ssh_private_key_file=secret_files/osf.pem
