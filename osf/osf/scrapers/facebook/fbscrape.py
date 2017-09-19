@@ -380,7 +380,13 @@ class FbScraper():
         elem.send_keys(self.fb_password)
         elem.send_keys(Keys.RETURN)
         time.sleep(3)
+        self.assert_logged_in()
         self.logged_in = True
+
+    def assert_logged_in(self):
+        elements = self.driver.find_elements_by_css_selector('._1k67')
+        if not len(elements):
+            raise Exception('++ failed to assert that driver is logged in')
 
     def get_posts(self, params):
         """

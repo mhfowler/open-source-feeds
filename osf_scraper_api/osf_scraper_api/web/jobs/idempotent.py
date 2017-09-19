@@ -5,7 +5,7 @@ from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
 
 
 def idempotent_scrape_friends(job_name, users, fb_username, fb_password):
-
+    _log('++ starting idempotent scrape friends job')
     fb_scraper = FbScraper(
                     fb_username=fb_username,
                     fb_password=fb_password,
@@ -27,7 +27,7 @@ def idempotent_scrape_friends(job_name, users, fb_username, fb_password):
 
 
 def idempotent_scrape_posts(job_name, users, fb_username, fb_password, scraper_params):
-
+    _log('++ starting idempotent scrape posts job')
     fb_scraper = FbScraper(
                     fb_username=fb_username,
                     fb_password=fb_password,
