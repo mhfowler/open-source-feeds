@@ -1,5 +1,6 @@
 from flask import make_response, jsonify, Blueprint, request, abort
 from osf_scraper_api.web.jobs.scraper import scraper_job
+from osf_scraper_api.web.jobs.idempotent import idempotent_scrape_friends, idempotent_scrape_posts
 from osf_scraper_api.web.jobs.test_rq import test_rq
 
 from osf_scraper_api.settings import TEMPLATE_DIR
@@ -57,5 +58,32 @@ def get_scraper_blueprint(osf_queue):
     @scraper_blueprint.route('/api/scrape_friends/', methods=['POST'])
     def scrape_friends_endpoint():
         return scrape_endpoint(method='friends')
+
+    @scraper_blueprint.route('/api/idempotent/friends/', methods=['POST'])
+    def idempotent_friends_endpoint():
+        params = request.get_json()
+        idempotent_scrape_friends(
+            job_name=params['job_name'],
+            users=params['users'],
+            fb_username=params['fb_username'],
+            fb_password=params['fb_password']
+        )
+        return make_response(jsonify({
+            'message': 'Ok'
+        }), 200)
+
+    @scraper_blueprint.route('/api/idempotent/posts/', methods=['POST'])
+    def idempotent_posts_endpoint():
+        params = request.get_json()
+        idempotent_scrape_posts(
+            job_name=params['job_name'],
+            users=params['users'],
+            fb_username=params['fb_username'],
+            fb_password=params['fb_password'],
+            scraper_params=params['scraper_params']
+        )
+        return make_response(jsonify({
+            'message': 'Ok'
+        }), 200)
 
     return scraper_blueprint
