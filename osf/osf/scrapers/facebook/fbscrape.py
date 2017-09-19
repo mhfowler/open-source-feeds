@@ -232,7 +232,7 @@ class FbScraper():
 
         # navigate to the url of the friend
         url = '{}/{}'.format(BASE_URL, user)
-        self.log('++ getting posts for {}'.format(url))
+        self.log('++ navigating to url {}'.format(url))
         self.driver.get(url)
         time.sleep(4)
 
@@ -406,6 +406,7 @@ class FbScraper():
         posts = {}
         self.output['posts'] = posts
         for user in users:
+            self.log('++ getting posts for user: {}'.format(user))
             user_posts = self.get_posts_by_user(user,
                                                 after_date=params.get('after_date'),
                                                 before_date=params.get('before_date'),
