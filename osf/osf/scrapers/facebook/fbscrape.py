@@ -3,6 +3,7 @@ import re
 import time
 
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
@@ -116,7 +117,9 @@ class FbScraper():
         else:
             # chrome is default driver
             if not driver:
-                self.driver = webdriver.Chrome()
+                chrome_options = Options()
+                chrome_options.add_argument("--disable-notifications")
+                self.driver = webdriver.Chrome(chrome_options=chrome_options)
             # otherwise use the driver passed in
             else:
                 self.driver = driver
@@ -202,7 +205,12 @@ class FbScraper():
         # return usernames
         return usernames
 
-    def get_posts_by_user(self, user, after_date=None, max_num_posts_per_user=None):
+    def get_posts_by_user(self,
+                          user,
+                          after_date=None,
+                          before_date=None,
+                          jump_to=None,
+                          max_num_posts_per_user=None):
         """
         fetches posts by a particular user
         :param user:
@@ -212,17 +220,65 @@ class FbScraper():
             self.fb_login()
         self.close_dialogs()
 
-        # convert after_date to timestamp
+        # convert before_date and after_date to timestamp
         if after_date:
             after_timestamp = time.mktime(after_date.timetuple())
         else:
             after_timestamp = None
+        if before_date:
+            before_timestamp = time.mktime(before_date.timetuple())
+        else:
+            before_timestamp = None
 
         # navigate to the url of the friend
         url = '{}/{}'.format(BASE_URL, user)
         self.log('++ getting posts for {}'.format(url))
         self.driver.get(url)
         time.sleep(4)
+
+        # jump_to, optional arg to use facebook sticky header to jump to time period
+        if jump_to:
+            try:
+                for i in range(0, 3):
+                    self.log('++ scrolling')
+                    self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    time.sleep(1)
+                timeline_nav = self.driver.find_element_by_css_selector('.fbTimelineStickyHeader')
+                if timeline_nav:
+                    year = jump_to.year
+                    month = jump_to.month
+                    if year:
+                        selector = '.uiSelectorButton.uiButton.uiButtonOverlay'
+                        recent_nav = timeline_nav.find_elements_by_css_selector(selector)
+                        for elt in recent_nav:
+                            if elt.text == 'Recent':
+                                elt.click()
+                                time.sleep(2)
+                        # xpath_selector = "//*[contains(text(), 'Recent')]"
+                        # recent_nav = timeline_nav.find_element_by_xpath(xpath_selector)
+                        # recent_nav.click()
+                        # time.sleep(2)
+                        selector = '[data-key="year_{}"]'.format(year)
+                        year_select = timeline_nav.find_elements_by_css_selector(selector)
+                        if year_select:
+                            year_select = year_select[0]
+                            year_select.click()
+                            time.sleep(2)
+                    if month:
+                        selector = '.uiSelectorButton.uiButton.uiButtonOverlay'
+                        all_posts_nav = timeline_nav.find_elements_by_css_selector(selector)
+                        for elt in all_posts_nav:
+                            if elt.text == 'All Posts':
+                                elt.click()
+                                time.sleep(2)
+                        selector = '[data-key="month_{}_{}"]'.format(year, month)
+                        month_select = timeline_nav.find_elements_by_css_selector(selector)
+                        if month_select:
+                            month_select = month_select[0]
+                            month_select.click()
+                            time.sleep(2)
+            except:
+                self.log('++ failed to jump to date: {}'.format(jump_to))
 
         # scroll the page and scrape posts
         posts = {}
@@ -245,7 +301,7 @@ class FbScraper():
 
             # grab the posts
             # found_posts = self.driver.find_elements_by_css_selector('a._5pcq')
-            found_sel_posts = self.driver.find_elements_by_css_selector('div.fbUserContent')
+            found_sel_posts = self.driver.find_elements_by_css_selector('div.fbUserPost')
             found_posts = [Post(x) for x in found_sel_posts]
             # filter out malformed posts
             found_posts = filter(lambda p: p.is_valid(), found_posts)
@@ -257,8 +313,9 @@ class FbScraper():
             if not new_posts:
                 num_consecutive_searches_without_posts += 1
                 # if there have been 3 searches in a row without any new posts, then break the loop
-                if num_consecutive_searches_without_posts >= 3:
+                if num_consecutive_searches_without_posts >= 5:
                     finished = True
+                    self.log('++ stopping search due to too many searches without finding any posts')
             else:
                 self.log('++ found {} posts'.format(len(new_posts)))
 
@@ -282,6 +339,7 @@ class FbScraper():
                 if timestamp:
                     # if we found a post older than the given date, then stop downloading
                     if after_timestamp and timestamp < after_timestamp:
+                        self.log('++ stopping search due to after_date')
                         finished = True
                     # otherwise add the post to the list of found posts
                     else:
@@ -299,8 +357,12 @@ class FbScraper():
         for post_link, post in posts.items():
             to_return.append(post)
 
+        # if there is before_date, then filter the posts
+        if before_date:
+            to_return = filter(lambda post: post['date'] <= before_timestamp, to_return)
+
         # return the list of posts
-        self.log('++ found {} posts'.format(len(to_return)))
+        self.log('++ returned {} total posts for {}'.format(len(to_return), user))
         return to_return
 
     def fb_login(self):
@@ -339,6 +401,8 @@ class FbScraper():
         for user in users:
             user_posts = self.get_posts_by_user(user,
                                                 after_date=params.get('after_date'),
+                                                before_date=params.get('before_date'),
+                                                jump_to=params.get('jump_to'),
                                                 max_num_posts_per_user=params.get('max_num_posts_per_user')
                                                 )
             # store the posts in a dictionary which will be written to output later
@@ -360,8 +424,10 @@ if __name__ == '__main__':
         command_executor=None)
     import json
     output = fbscraper.get_posts({
-        'users': ENV_DICT['FB_FRIENDS'],
-        'after_date': datetime.datetime.now() - datetime.timedelta(days=365),
+        'users': ['maxhfowler'],
+        # 'after_date': datetime.date(year=2016, month=11, day=12),
+        # 'before_date': datetime.date(year=2016, month=11, day=12),
+        'jump_to': datetime.datetime(year=2016, month=9, day=1),
         'max_num_posts_per_user': 15,
     })
     print json.dumps(output)
