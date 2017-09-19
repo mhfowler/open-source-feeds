@@ -381,6 +381,7 @@ class FbScraper():
         elem.send_keys(Keys.RETURN)
         time.sleep(3)
         self.assert_logged_in()
+        self.log('++ successfully logged in')
         self.logged_in = True
 
     def assert_logged_in(self):

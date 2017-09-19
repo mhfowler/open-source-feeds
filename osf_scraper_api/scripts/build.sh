@@ -7,5 +7,6 @@ nunjucks *.njk -p $BASEDIR/devops/templates \
     -o $BASEDIR/devops/build \
     -e "$BASEDIR/devops/config/${BUILD_ENV}.json"
 echo "++ building docker image"
-docker-compose build
+
+docker-compose build $DOCKER_NO_CACHE
 osascript -e 'display notification "finished" with title "Notification"'
