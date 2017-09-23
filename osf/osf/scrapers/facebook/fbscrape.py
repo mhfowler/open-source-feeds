@@ -286,6 +286,7 @@ class FbScraper():
         num_consecutive_searches_without_posts = 0
         num_searches = 0
         max_num_searches = 200
+        stop_search_reason = None
         # keep looping until we reach a finished condition
         # (no new posts, > than oldest date, or > max_num_searches)
         while not finished and (num_searches < max_num_searches):
@@ -315,7 +316,7 @@ class FbScraper():
                 # if there have been 3 searches in a row without any new posts, then break the loop
                 if num_consecutive_searches_without_posts >= 5:
                     finished = True
-                    self.log('++ stopping search due to too many searches without finding any posts')
+                    stop_search_reason = '++ stopping search due to too many searches without finding any posts'
             else:
                 self.log('++ found {} posts'.format(len(new_posts)))
 
@@ -330,7 +331,7 @@ class FbScraper():
                     finished = True
                     # and truncate new_posts
                     new_posts = new_posts[:num_posts_remaining]
-                    self.log('++ stopping search due to max_num_posts_per_user')
+                    stop_search_reason = '++ stopping search due to max_num_posts_per_user'
 
             # iterate through new posts and parse and save them
             for post in new_posts:
@@ -339,7 +340,7 @@ class FbScraper():
                 if timestamp:
                     # if we found a post older than the given date, then stop downloading
                     if after_timestamp and timestamp < after_timestamp:
-                        self.log('++ stopping search due to after_date')
+                        stop_search_reason = '++ stopping search due to after_date'
                         finished = True
                     # otherwise add the post to the list of found posts
                     else:
@@ -351,6 +352,9 @@ class FbScraper():
                             }
                 else:
                     pass
+
+        if stop_search_reason:
+            self.log(stop_search_reason)
 
         # convert dictionary of posts to a list
         to_return = []

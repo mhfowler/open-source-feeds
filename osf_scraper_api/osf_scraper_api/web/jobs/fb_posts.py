@@ -29,8 +29,15 @@ class OsfScraper:
         self.send_to = params.get('send_to')
         # if replace=false then it creates a new file within the folder located at output_path
         # if replace=true, then it replaces output_path with the output contents
-        self.replace = params.get('replace') == "true"
+        self.replace = params.get('replace') is True
         self.time = int(time.time())
+
+    def convert_timestamp_to_date(self, ts):
+        try:
+            return datetime.datetime.fromtimestamp(int(ts))
+        except:
+            _log('++ warning: unable to parse timestamp {}'.format(ts))
+            return None
 
     def write_output(self, output):
         # save the output to the fs
@@ -96,19 +103,23 @@ class OsfScraper:
             log=_log
         )
         try:
-            # parse after_timestamp if supplied
+            # parse timestamps if supplied
             after_date = None
             if s_params.get('after_timestamp'):
-                after_timestamp = s_params.get('after_timestamp')
-                try:
-                    after_date = datetime.datetime.fromtimestamp(int(after_timestamp))
-                except:
-                    _log('++ warning: unable to parse timestamp {}'.format(after_timestamp))
+                after_date = self.convert_timestamp_to_date(s_params.get('after_timestamp'))
+            before_date = None
+            if s_params.get('before_timestamp'):
+                before_date = self.convert_timestamp_to_date(s_params.get('before_timestamp'))
+            jump_to = None
+            if s_params.get('jump_to_timestamp'):
+                jump_to = self.convert_timestamp_to_date(s_params.get('jump_to_timestamp'))
             # then call function
             output = fb_scraper.get_posts({
                 'users': s_params['users'],
                 'max_num_posts_per_user': s_params.get('max_num_posts_per_user'),
                 'after_date': after_date,
+                'before_date': before_date,
+                'jump_to': jump_to
             })
         except Exception as e:
             _capture_exception(e)

@@ -1,14 +1,20 @@
 import json
 import tempfile
+import os
 
 from osf_scraper_api.settings import ENV_DICT
 from osf_scraper_api.utilities.s3_helper import s3_upload_file, s3_get_file_as_string, s3_key_exists
 
 
 def save_dict(data_dict, destination):
-    with tempfile.NamedTemporaryFile(mode='w') as f:
-        f.write(json.dumps(data_dict))
-        save_file(f_path=f.name, destination=destination)
+    f = tempfile.NamedTemporaryFile(delete=False)
+    # write contents to file
+    contents = json.dumps(data_dict)
+    f.write(contents)
+    f.close()
+    # save file
+    save_file(source_file_path=f.name, destination=destination)
+    os.unlink(f.name)
 
 
 def load_dict(path):
@@ -24,9 +30,9 @@ def get_file_as_string(path):
         raise Exception('++ invalid FS_BIN_TYPE: {}'.format(ENV_DICT['FS_BIN_TYPE']))
 
 
-def save_file(f_path, destination):
+def save_file(source_file_path, destination):
     if ENV_DICT['FS_BIN_TYPE'] == 'S3':
-        s3_upload_file(source_file_path=f_path, destination=destination)
+        s3_upload_file(source_file_path=source_file_path, destination=destination)
     else:
         raise Exception('++ invalid FS_BIN_TYPE: {}'.format(ENV_DICT['FS_BIN_TYPE']))
 

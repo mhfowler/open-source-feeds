@@ -25,7 +25,8 @@ def get_facebook_blueprint(osf_queue):
         osf_queue.enqueue(scrape_fb_friends,
             users=params['users'],
             fb_username=params['fb_username'],
-            fb_password=params['fb_password']
+            fb_password=params['fb_password'],
+            no_skip=params.get('no_skip')
         )
         return make_response(jsonify({
             'message': 'Ok'
@@ -42,13 +43,14 @@ def get_facebook_blueprint(osf_queue):
             for user in users:
                 key_name = 'jobs/{}/{}.json'.format(job_name, user)
                 # if already exists then skip
-                if file_exists(key_name):
-                    _log('++ skipping {}'.format(key_name))
-                    continue
+                if params.get('no_skip') is not True:
+                    if file_exists(key_name):
+                        _log('++ skipping {}'.format(key_name))
+                        continue
                 # otherwise scrape and then save this user
                 params['users'] = [user]
                 params['output_path'] = key_name
-                params['replace'] = "true"
+                params['replace'] = True
                 if params.get('job_name'):
                     del params['job_name']
                 _log('++ enqueing fb_posts job for user {}'.format(user))
