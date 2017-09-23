@@ -112,7 +112,7 @@ class FbScraper():
         if command_executor:
             self.driver = webdriver.Remote(
                 command_executor=command_executor,
-                desired_capabilities=DesiredCapabilities.FIREFOX.copy()
+                desired_capabilities=DesiredCapabilities.CHROME.copy()
             )
         else:
             # chrome is default driver
@@ -301,7 +301,7 @@ class FbScraper():
 
             # grab the posts
             # found_posts = self.driver.find_elements_by_css_selector('a._5pcq')
-            found_sel_posts = self.driver.find_elements_by_css_selector('div.fbUserPost')
+            found_sel_posts = self.driver.find_elements_by_css_selector('div.fbUserContent, div.fbUserContent')
             found_posts = [Post(x) for x in found_sel_posts]
             # filter out malformed posts
             found_posts = filter(lambda p: p.is_valid(), found_posts)
@@ -320,11 +320,11 @@ class FbScraper():
                 self.log('++ found {} posts'.format(len(new_posts)))
 
             # calculate how many posts
-            num_posts = len(posts.keys())
+            num_posts_already = len(posts.keys())
 
             # if max_num_posts_per_user, check if we have exceeded the limit
             if max_num_posts_per_user:
-                num_posts_remaining = max_num_posts_per_user - num_posts
+                num_posts_remaining = max_num_posts_per_user - num_posts_already
                 if len(new_posts) > num_posts_remaining:
                     # end the for loop
                     finished = True

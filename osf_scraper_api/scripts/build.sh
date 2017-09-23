@@ -1,6 +1,7 @@
 #!/bin/bash -e
 echo "++ building docker image for build env: ${BUILD_ENV}"
-BASEDIR=$(dirname $( cd $(dirname $0) ; pwd -P ))
+BASEDIR=$(cd $(dirname $0/..) ; pwd -P )
+echo $BASEDIR
 echo "BASEDIR: ${BASEDIR}"
 echo "++ compiling nunjucks templates"
 nunjucks *.njk -p $BASEDIR/devops/templates \
@@ -8,5 +9,5 @@ nunjucks *.njk -p $BASEDIR/devops/templates \
     -e "$BASEDIR/devops/config/${BUILD_ENV}.json"
 echo "++ building docker image"
 
-docker-compose build $DOCKER_NO_CACHE
+docker-compose build $DOCKER_NO_CACHE osf_scraper_api
 osascript -e 'display notification "finished" with title "Notification"'

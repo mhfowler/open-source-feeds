@@ -1,0 +1,42 @@
+FROM ubuntu:14.04
+
+# constants
+ENV LOG_DIR /srv/log
+ENV DATA_DIR /srv/data
+ENV LOCAL_DIR osf_scraper_api/
+
+# Update OS
+RUN apt-get update
+RUN apt-get -y upgrade
+
+# Install Python
+RUN apt-get install -y python-dev python-pip
+RUN pip install --upgrade pip
+
+# Install other dependencies
+RUN apt-get install -y \
+    libpq-dev \
+    nginx \
+    git \
+    curl
+
+# create user groups
+RUN groupadd webgroup
+RUN usermod -G webgroup root
+RUN useradd -G webgroup ubuntu
+RUN useradd -G webgroup nginx-user
+RUN useradd -G webgroup uwsgi-user
+
+# copy over ssh keys
+COPY ${LOCAL_DIR}devops/secret_files/osf_rsa.pub /root/.ssh/id_rsa.pub
+COPY ${LOCAL_DIR}devops/secret_files/osf_rsa /root/.ssh/id_rsa
+
+# ensure directories
+RUN mkdir $LOG_DIR
+RUN mkdir $DATA_DIR
+
+# Install Supervisord
+RUN apt-get update && apt-get install -y supervisor \
+&& rm -rf /var/lib/apt/lists/*
+# Custom Supervisord config
+COPY ${LOCAL_DIR}devops/templates/supervisord.conf /etc/supervisor/conf.d/supervisord.conf

@@ -4,8 +4,8 @@ from osf_scraper_api.settings import SELENIUM_URL
 from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
 
 
-def idempotent_scrape_friends(job_name, users, fb_username, fb_password):
-    _log('++ starting idempotent scrape friends job')
+def scrape_fb_friends(users, fb_username, fb_password):
+    _log('++ starting fb_friends job')
     fb_scraper = FbScraper(
                     fb_username=fb_username,
                     fb_password=fb_password,
@@ -15,7 +15,7 @@ def idempotent_scrape_friends(job_name, users, fb_username, fb_password):
     fb_scraper.fb_login()
 
     for user in users:
-        key_name = 'jobs/{}/friends/{}.json'.format(job_name, user)
+        key_name = 'friends/{}.json'.format(user)
         if file_exists(key_name):
             _log('++ skipping {}'.format(key_name))
             continue
@@ -35,6 +35,7 @@ def idempotent_scrape_posts(job_name, users, fb_username, fb_password, scraper_p
                     log=_log
                 )
     fb_scraper.fb_login()
+    _log('++ request complete')
 
     for user in users:
         key_name = 'jobs/{}/posts/{}.json'.format(job_name, user)
