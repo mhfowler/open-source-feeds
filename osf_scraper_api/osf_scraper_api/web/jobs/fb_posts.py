@@ -35,6 +35,7 @@ class OsfScraper:
         # if replace=true, then it replaces output_path with the output contents
         self.replace = params.get('replace') is True
         self.time = int(time.time())
+        self.fb_scraper = None
 
     def convert_timestamp_to_date(self, ts):
         try:
@@ -111,7 +112,7 @@ class OsfScraper:
             log=_log,
             log_image=_log_image,
         )
-        self.fb_scraper = self.fb_scraper
+        self.fb_scraper = fb_scraper
         try:
             # parse timestamps if supplied
             after_date = None

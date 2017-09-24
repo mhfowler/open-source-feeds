@@ -55,8 +55,8 @@ def get_facebook_blueprint(osf_queue):
             _log('++ enqueing fb_posts job for each user provided')
             users = params.get('users')
             if users == 'all_friends':
-                _log('++ looking up users from friends of central_user')
                 central_user = params.get('central_user')
+                _log('++ looking up users from friends of central_user: {}'.format(central_user))
                 users = fetch_friends_of_user(central_user)
             for user in users:
                 key_name = 'jobs/{}/{}.json'.format(job_name, user)
