@@ -113,35 +113,24 @@ class OsfScraper:
             log_image=_log_image,
         )
         self.fb_scraper = fb_scraper
-        try:
-            # parse timestamps if supplied
-            after_date = None
-            if s_params.get('after_timestamp'):
-                after_date = self.convert_timestamp_to_date(s_params.get('after_timestamp'))
-            before_date = None
-            if s_params.get('before_timestamp'):
-                before_date = self.convert_timestamp_to_date(s_params.get('before_timestamp'))
-            jump_to = None
-            if s_params.get('jump_to_timestamp'):
-                jump_to = self.convert_timestamp_to_date(s_params.get('jump_to_timestamp'))
-            # then call function
-            output = fb_scraper.get_posts({
-                'users': s_params['users'],
-                'max_num_posts_per_user': s_params.get('max_num_posts_per_user'),
-                'after_date': after_date,
-                'before_date': before_date,
-                'jump_to': jump_to
-            })
-        except Exception as e:
-            _capture_exception(e)
-            # for the email version, abort on errors here
-            if self.send_to:
-                self.send_error_message()
-            # but for backend version, keep going
-            output = 'Error: {}'.format(e.message)
-        finally:
-            # quit driver
-            fb_scraper.quit_driver()
+
+        after_date = None
+        if s_params.get('after_timestamp'):
+            after_date = self.convert_timestamp_to_date(s_params.get('after_timestamp'))
+        before_date = None
+        if s_params.get('before_timestamp'):
+            before_date = self.convert_timestamp_to_date(s_params.get('before_timestamp'))
+        jump_to = None
+        if s_params.get('jump_to_timestamp'):
+            jump_to = self.convert_timestamp_to_date(s_params.get('jump_to_timestamp'))
+        # then call function
+        output = fb_scraper.get_posts({
+            'users': s_params['users'],
+            'max_num_posts_per_user': s_params.get('max_num_posts_per_user'),
+            'after_date': after_date,
+            'before_date': before_date,
+            'jump_to': jump_to
+        })
 
         # return output
         return output
