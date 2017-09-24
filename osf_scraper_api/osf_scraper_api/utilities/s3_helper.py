@@ -51,6 +51,25 @@ def s3_key_exists(s3_path):
         return False
 
 
+def s3_folders_in_folder_helper(client, bucket_name, prefix=''):
+    paginator = client.get_paginator('list_objects')
+    for result in paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter='/'):
+        for prefix in result.get('CommonPrefixes', []):
+            yield prefix.get('Prefix')
+
+
+def s3_list_files_in_folder(s3_path):
+    session = boto3.Session(
+        aws_access_key_id=ENV_DICT['AWS_ACCESS_KEY'],
+        aws_secret_access_key=ENV_DICT['AWS_SECRET_KEY'],
+    )
+    client = session.client('s3')
+    bucket_name = ENV_DICT['S3_BUCKET_NAME']
+    keys = client.list_objects(Bucket=bucket_name, Prefix=s3_path)['Contents']
+    to_return = [k['Key'] for k in keys]
+    return to_return
+
+
 if __name__ == '__main__':
 
     # Upload a new file

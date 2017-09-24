@@ -9,6 +9,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
+from osf.scrapers.facebook.screenshot import save_post
 
 BASE_URL = 'https://www.facebook.com'
 
@@ -152,6 +153,11 @@ class FbScraper():
             for notification in notifications:
                 notification.click()
                 time.sleep(4)
+
+    def screenshot_post(self, post, output_path):
+        if not self.logged_in:
+            self.fb_login()
+        save_post(post=post, driver=self.driver, output_path=output_path)
 
     def get_friends(self, users):
         """

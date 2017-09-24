@@ -1,12 +1,49 @@
+import re
+import hashlib
+
 from flask import make_response, jsonify, Blueprint, request
 
 from osf_scraper_api.utilities.fb_helper import fetch_friends_of_user
 from osf_scraper_api.web.jobs.fb_posts import scrape_fb_posts
 from osf_scraper_api.web.jobs.fb_friends import scrape_fb_friends
+from osf_scraper_api.web.jobs.screenshot import screenshot_posts
 from osf_scraper_api.web.jobs.test_rq import test_rq
-from osf_scraper_api.utilities.log_helper import _log
-from osf_scraper_api.utilities.fs_helper import file_exists, get_file_as_string
+from osf_scraper_api.utilities.log_helper import _log, _capture_exception
+from osf_scraper_api.utilities.fs_helper import file_exists, load_dict, list_files_in_folder
 from osf_scraper_api.settings import TEMPLATE_DIR
+
+
+def screenshot_helper(user_file, input_folder, no_skip, fb_username, fb_password):
+    match = re.match('(.*)\.json', user_file)
+    if match:
+        user = match.group(1)
+    else:
+        user = user_file
+    user = user.replace(input_folder, '')
+    if user.startswith('/'):
+        user = user[1:]
+    user_posts = load_dict(user_file)['posts'][user]
+    posts_to_scrape = []
+    for post in user_posts:
+        post_link = post['link']
+        match = re.match('.*/posts/(\d+)', post_link)
+        if match:
+            post_id = match.group(1)
+        else:
+            post_id = 'XX' + str(int(hashlib.sha1(post_link).hexdigest(), 16) % (10 ** 8))
+        output_key = 'screenshots/{}-{}.png'.format(user, post_id)
+        if no_skip:
+            if file_exists(output_key):
+                _log('++ skipping {}'.format(output_key))
+                continue
+        # if not skipped, then add it to the list of posts to screenshot
+        post['screenshot_path'] = output_key
+        posts_to_scrape.append(post)
+    if len(posts_to_scrape):
+        _log('++ preparing to screenshot {} posts'.format(len(posts_to_scrape)))
+        screenshot_posts(posts=posts_to_scrape, fb_username=fb_username, fb_password=fb_password)
+    else:
+        _log('++ skipping {}, no posts to screenshot'.format(user))
 
 
 def get_facebook_blueprint(osf_queue):
@@ -43,7 +80,7 @@ def get_facebook_blueprint(osf_queue):
                   no_skip=params.get('no_skip')
                 )
         return make_response(jsonify({
-            'message': 'Ok'
+            'message': 'fb_friend job enqueued'
         }), 200)
 
     @facebook_blueprint.route('/api/fb_posts/', methods=['POST'])
@@ -78,7 +115,32 @@ def get_facebook_blueprint(osf_queue):
             osf_queue.enqueue(scrape_fb_posts, params)
         # finally return 'OK' response
         return make_response(jsonify({
-            'message': 'Ok'
+            'message': 'fb_post job enqueued'
+        }), 200)
+
+    @facebook_blueprint.route('/api/fb_screenshots/', methods=['POST'])
+    def fb_screenshots_endpoint():
+        params = request.get_json()
+        input_folder = params['input_folder']
+        user_files = list_files_in_folder(input_folder)
+        no_skip = params.get('no_skip') is not True
+        fb_username = params['fb_username']
+        fb_password = params['fb_password']
+        for user_file in user_files:
+            _log('++ screenshotting posts for {}'.format(user_file))
+            try:
+                screenshot_helper(
+                    user_file=user_file,
+                    input_folder=input_folder,
+                    fb_username=fb_username,
+                    fb_password=fb_password,
+                    no_skip=no_skip
+                )
+            except Exception as e:
+                _log('++ failed to screenshot user_file: {}'.format(user_file))
+                _capture_exception(e)
+        return make_response(jsonify({
+            'message': 'fb_screenshot job enqueued'
         }), 200)
 
     return facebook_blueprint
