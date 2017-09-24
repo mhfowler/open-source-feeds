@@ -186,7 +186,7 @@ class FbScraper():
             if num_friends == prev_num_friends:
                 j += 1
             prev_num_friends = num_friends
-            if j > 3:
+            if j > 5:
                 break
 
         friends = self.driver.find_elements_by_css_selector('.fsl a')

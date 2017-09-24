@@ -25,7 +25,7 @@ def load_dict(path):
 
 def get_file_as_string(path):
     if ENV_DICT['FS_BIN_TYPE'] == 'S3':
-        s3_get_file_as_string(s3_path=path)
+        return s3_get_file_as_string(s3_path=path)
     else:
         raise Exception('++ invalid FS_BIN_TYPE: {}'.format(ENV_DICT['FS_BIN_TYPE']))
 

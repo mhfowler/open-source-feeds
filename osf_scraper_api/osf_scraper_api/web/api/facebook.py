@@ -1,10 +1,11 @@
 from flask import make_response, jsonify, Blueprint, request
+
+from osf_scraper_api.utilities.fb_helper import fetch_friends_of_user
 from osf_scraper_api.web.jobs.fb_posts import scrape_fb_posts
 from osf_scraper_api.web.jobs.fb_friends import scrape_fb_friends
 from osf_scraper_api.web.jobs.test_rq import test_rq
 from osf_scraper_api.utilities.log_helper import _log
-from osf_scraper_api.utilities.fs_helper import file_exists
-
+from osf_scraper_api.utilities.fs_helper import file_exists, get_file_as_string
 from osf_scraper_api.settings import TEMPLATE_DIR
 
 
@@ -21,13 +22,26 @@ def get_facebook_blueprint(osf_queue):
     @facebook_blueprint.route('/api/fb_friends/', methods=['POST'])
     def fb_friends_endpoint():
         params = request.get_json()
-        _log('++ enqueing fb_friends job')
-        osf_queue.enqueue(scrape_fb_friends,
-            users=params['users'],
-            fb_username=params['fb_username'],
-            fb_password=params['fb_password'],
-            no_skip=params.get('no_skip')
-        )
+        users = params.get('users')
+        if users != 'all_friends':
+            _log('++ enqueing fb_friends job')
+            osf_queue.enqueue(scrape_fb_friends,
+                users=params['users'],
+                fb_username=params['fb_username'],
+                fb_password=params['fb_password'],
+                no_skip=params.get('no_skip')
+            )
+        else:
+            central_user = params.get('central_user')
+            friends = fetch_friends_of_user(central_user)
+            for friend in friends:
+                _log('++ enqueing fb_friends job for: {}'.format(friend))
+                osf_queue.enqueue(scrape_fb_friends,
+                  users=[friend],
+                  fb_username=params['fb_username'],
+                  fb_password=params['fb_password'],
+                  no_skip=params.get('no_skip')
+                )
         return make_response(jsonify({
             'message': 'Ok'
         }), 200)
@@ -40,6 +54,10 @@ def get_facebook_blueprint(osf_queue):
         if job_name:
             _log('++ enqueing fb_posts job for each user provided')
             users = params.get('users')
+            if users == 'all_friends':
+                _log('++ looking up users from friends of central_user')
+                central_user = params.get('central_user')
+                users = fetch_friends_of_user(central_user)
             for user in users:
                 key_name = 'jobs/{}/{}.json'.format(job_name, user)
                 # if already exists then skip

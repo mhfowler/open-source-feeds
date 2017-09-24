@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 import boto3
 
@@ -23,8 +24,11 @@ def s3_upload_file(source_file_path, destination):
 
 def s3_get_file_as_string(s3_path):
     bucket = get_s3_bucket()
-    obj = bucket.get_object(Key=s3_path)
-    content = obj.Body
+    f, f_path = tempfile.mkstemp()
+    bucket.download_file(Key=s3_path, Filename=f_path)
+    with open(f_path, 'r') as f:
+        content = f.read()
+    os.unlink(f_path)
     return content
 
 
