@@ -94,8 +94,8 @@ def get_facebook_blueprint(osf_queue):
         no_skip = params.get('no_skip') is not True
         fb_username = params['fb_username']
         fb_password = params['fb_password']
+        _log('++ enqueuing screenshot jobs for {} users'.format(len(user_files)))
         for user_file in user_files:
-            _log('++ enqueuing screenshot job for {}'.format(user_file))
             osf_queue.enqueue(screenshot_job,
                 user_file=user_file,
                 input_folder=input_folder,
@@ -103,6 +103,7 @@ def get_facebook_blueprint(osf_queue):
                 fb_password=fb_password,
                 no_skip=no_skip
             )
+        _log('++ enqueued all {} screenshot jobs'.format(len(user_files)))
         return make_response(jsonify({
             'message': 'fb_screenshot job enqueued'
         }), 200)

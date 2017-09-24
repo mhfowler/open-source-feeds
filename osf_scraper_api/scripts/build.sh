@@ -1,7 +1,6 @@
 #!/bin/bash -e
 echo "++ building docker image for build env: ${BUILD_ENV}"
-BASEDIR=$(cd $(dirname $0/..) ; pwd -P )
-echo $BASEDIR
+BASEDIR=$(cd $(dirname $0)/..  ; pwd -P )
 echo "BASEDIR: ${BASEDIR}"
 echo "++ compiling nunjucks templates"
 nunjucks *.njk -p $BASEDIR/devops/templates \
