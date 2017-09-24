@@ -277,6 +277,7 @@ class FbScraper():
                             month_select = month_select[0]
                             month_select.click()
                             time.sleep(2)
+                            self.log('++ successfully jumped to: {}'.format(jump_to))
             except:
                 self.log('++ failed to jump to date: {}'.format(jump_to))
 
