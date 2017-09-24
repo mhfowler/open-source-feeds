@@ -6,6 +6,10 @@ import boto3
 from osf_scraper_api.settings import ENV_DICT, PROJECT_PATH
 
 
+def get_s3_base_url():
+    return 'https://s3.amazonaws.com/{}'.format(ENV_DICT['S3_BUCKET_NAME'])
+
+
 def get_s3_bucket():
     session = boto3.Session(
         aws_access_key_id=ENV_DICT['AWS_ACCESS_KEY'],
@@ -20,6 +24,7 @@ def s3_upload_file(source_file_path, destination):
     with open(source_file_path, 'r') as f:
         bucket = get_s3_bucket()
         bucket.put_object(Key=destination, Body=f)
+    return '{}/{}'.format(get_s3_base_url(), destination)
 
 
 def s3_get_file_as_string(s3_path):

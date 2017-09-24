@@ -1,6 +1,8 @@
 import datetime
 import re
 import time
+import tempfile
+import os
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -105,14 +107,16 @@ class FbScraper():
     Wrapper class for scraping facebook
     """
 
-    def __init__(self, fb_username, fb_password, command_executor=None, driver=None, log=None):
+    def __init__(self, fb_username, fb_password, command_executor=None, driver=None, log=None, log_image=None):
         self.fb_username = fb_username
         self.fb_password = fb_password
         self.logged_in = False
         if command_executor:
+            chrome_options = Options()
+            chrome_options.add_argument("--disable-notifications")
             self.driver = webdriver.Remote(
                 command_executor=command_executor,
-                desired_capabilities=DesiredCapabilities.CHROME.copy()
+                desired_capabilities=chrome_options.to_capabilities()
             )
         else:
             # chrome is default driver
@@ -125,12 +129,17 @@ class FbScraper():
                 self.driver = driver
         self.output = {}
         self.log_fun = log
+        self.log_image_fun = log_image
 
     def log(self, message):
         if self.log_fun:
             self.log_fun(message)
         else:
             print message
+
+    def log_image(self, image_path):
+        if self.log_image_fun:
+            self.log_image_fun(image_path)
 
     def close_dialogs(self):
         """
@@ -204,6 +213,12 @@ class FbScraper():
 
         # return usernames
         return usernames
+
+    def log_screenshot(self):
+        f, f_path = tempfile.mkstemp()
+        self.driver.get_screenshot_as_file(f_path)
+        self.log_image(image_path=f_path)
+        os.unlink(f_path)
 
     def get_posts_by_user(self,
                           user,
@@ -280,6 +295,7 @@ class FbScraper():
                             self.log('++ successfully jumped to: {}'.format(jump_to))
             except:
                 self.log('++ failed to jump to date: {}'.format(jump_to))
+                self.log_screenshot()
 
         # scroll the page and scrape posts
         posts = {}
@@ -390,6 +406,7 @@ class FbScraper():
         self.logged_in = True
 
     def assert_logged_in(self):
+        self.log_screenshot()
         elements = self.driver.find_elements_by_css_selector('._1k67')
         if not len(elements):
             raise Exception('++ failed to assert that driver is logged in')

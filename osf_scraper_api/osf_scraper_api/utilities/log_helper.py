@@ -1,5 +1,6 @@
 import sys
 import traceback
+import random
 
 from osf_scraper_api.utilities.slack_helper import slack_notify_message
 from osf_scraper_api.web.extensions import sentry
@@ -19,6 +20,13 @@ def _log(message, channel_name=None):
     # if slack logging is turned on
     if ENV_DICT.get('LOG_TO_SLACK'):
         slack_notify_message(message, channel_name=channel_name)
+
+
+def _log_image(image_path):
+    from osf_scraper_api.utilities.s3_helper import s3_upload_file
+    s3_key = 'debug/{}.png'.format(random.randint(0, 1000000))
+    image_url = s3_upload_file(source_file_path=image_path, destination=s3_key)
+    _log('++ debug: {}'.format(image_url))
 
 
 def _capture_exception(e):
