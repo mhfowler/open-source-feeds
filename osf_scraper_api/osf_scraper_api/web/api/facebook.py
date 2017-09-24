@@ -1,5 +1,6 @@
 import re
 import hashlib
+import datetime
 
 from flask import make_response, jsonify, Blueprint, request
 
@@ -31,7 +32,12 @@ def screenshot_helper(user_file, input_folder, no_skip, fb_username, fb_password
             post_id = match.group(1)
         else:
             post_id = 'XX' + str(int(hashlib.sha1(post_link).hexdigest(), 16) % (10 ** 8))
-        output_key = 'screenshots/{}-{}.png'.format(user, post_id)
+        try:
+            d = datetime.datetime.fromtimestamp(int(post['date']))
+            date_str = d.strftime('%b%d')
+        except:
+            date_str = ''
+        output_key = 'screenshots/{}-{}-{}.png'.format(user, post_id, date_str)
         if no_skip:
             if file_exists(output_key):
                 _log('++ skipping {}'.format(output_key))
