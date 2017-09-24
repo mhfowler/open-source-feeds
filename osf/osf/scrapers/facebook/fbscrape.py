@@ -130,6 +130,7 @@ class FbScraper():
         self.output = {}
         self.log_fun = log
         self.log_image_fun = log_image
+        self.driver_has_quit = False
 
     def log(self, message):
         if self.log_fun:
@@ -442,7 +443,10 @@ class FbScraper():
         return self.output
 
     def quit_driver(self):
-        self.driver.quit()
+        if not self.driver_has_quit:
+            self.log('++ quitting driver')
+            self.driver.quit()
+            self.driver_has_quit = True
 
 
 if __name__ == '__main__':

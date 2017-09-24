@@ -18,8 +18,12 @@ def scrape_fb_posts(params):
         scraper.write_output(output)
         _log('++ request complete')
     except Exception as e:
+        _log('++ encountered an error')
         _capture_exception(e)
         scraper.send_error_message()
+        raise e
+    finally:
+        scraper.quit_driver()
 
 
 class OsfScraper:
@@ -38,6 +42,10 @@ class OsfScraper:
         except:
             _log('++ warning: unable to parse timestamp {}'.format(ts))
             return None
+
+    def quit_driver(self):
+        if self.fb_scraper:
+            self.fb_scraper.quit_driver()
 
     def write_output(self, output):
         # save the output to the fs
@@ -103,6 +111,7 @@ class OsfScraper:
             log=_log,
             log_image=_log_image,
         )
+        self.fb_scraper = self.fb_scraper
         try:
             # parse timestamps if supplied
             after_date = None
@@ -128,7 +137,7 @@ class OsfScraper:
             if self.send_to:
                 self.send_error_message()
             # but for backend version, keep going
-            output = 'Error'
+            output = 'Error: {}'.format(e.message)
         finally:
             # quit driver
             fb_scraper.quit_driver()
