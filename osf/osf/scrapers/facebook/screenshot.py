@@ -57,7 +57,7 @@ def save_post(post, driver, output_path, dpr, log):
 
     # try to click x elements
     try:
-        x_elements = driver.find_elements_by_css_selector('._418x, _xlt, _418x')
+        x_elements = driver.find_elements_by_css_selector('._418x, ._xlt, ._418x')
         if x_elements:
             x = x_elements[0]
             x.click()

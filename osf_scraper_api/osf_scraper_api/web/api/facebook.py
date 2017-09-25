@@ -101,7 +101,8 @@ def get_facebook_blueprint(osf_queue):
                 input_folder=input_folder,
                 fb_username=fb_username,
                 fb_password=fb_password,
-                no_skip=no_skip
+                no_skip=no_skip,
+                timeout=600
             )
         _log('++ enqueued all {} screenshot jobs'.format(len(user_files)))
         return make_response(jsonify({
