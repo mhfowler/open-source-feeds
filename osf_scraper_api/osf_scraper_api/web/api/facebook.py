@@ -111,12 +111,12 @@ def get_facebook_blueprint(osf_queue):
         # otherwise make a single job for all the posts
         else:
             osf_queue.enqueue(screenshot_multi_user_job,
-                              user_files=user_files[:10],
+                              user_files=user_files[-2:],
                               input_folder=input_folder,
                               fb_username=fb_username,
                               fb_password=fb_password,
                               no_skip=no_skip,
-                              timeout=600
+                              timeout=129600
                               )
             _log('++ enqueued 1 job for {} users'.format(len(user_files)))
         return make_response(jsonify({

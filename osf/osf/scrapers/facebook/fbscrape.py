@@ -183,7 +183,7 @@ class FbScraper():
     def screenshot_post(self, post, output_path):
         if not self.logged_in:
             self.fb_login()
-        save_post(post=post, driver=self.driver, output_path=output_path, dpr=self.dpr, log=self.log)
+        return save_post(post=post, driver=self.driver, output_path=output_path, dpr=self.dpr, log=self.log)
 
     def get_friends(self, users):
         """

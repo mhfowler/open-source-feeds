@@ -69,16 +69,23 @@ def screenshot_post_helper(post, fb_scraper):
     f = tempfile.NamedTemporaryFile(delete=False)
     f.close()
     temp_path = f.name + '.png'
-    fb_scraper.screenshot_post(post=post, output_path=temp_path)
-    image_url = save_file(source_file_path=temp_path, destination=output_path)
-    os.unlink(f.name)
-    os.unlink(temp_path)
-    _log('++ successfuly uploaded to: `{}`'.format(image_url))
+    found_post = fb_scraper.screenshot_post(post=post, output_path=temp_path)
+    if found_post:
+        image_url = save_file(source_file_path=temp_path, destination=output_path)
+        os.unlink(f.name)
+        os.unlink(temp_path)
+        _log('++ successfuly uploaded to: `{}`'.format(image_url))
+        return True
+    else:
+        _log('++ no post found at link')
+        return False
 
 
 def screenshot_post(post, fb_scraper):
     try:
         screenshot_post_helper(post=post, fb_scraper=fb_scraper)
+        # if we succeeded, then set num_initializations back to 0
+        fb_scraper.num_initializations = 0
     except Exception as e:
         _log('++ encountered error: {}'.format(str(e)))
         if fb_scraper.num_initializations < 5:
@@ -92,6 +99,7 @@ def screenshot_post(post, fb_scraper):
             #     os.system('sudo /usr/local/bin/docker-compose -f /srv/docker-compose.yml restart selenium')
             #     time.sleep(5)
             #     _log('++ chrome restarted')
+            fb_scraper.re_initialize_driver()
             _log('++ sleeping 90 (waiting for selenium to restart)')
             time.sleep(90)
             _log('++ giving up on `{}`'.format(post['link']))

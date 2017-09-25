@@ -28,14 +28,14 @@ def scrape_fb_posts(params):
 
 class OsfScraper:
 
-    def __init__(self, params):
+    def __init__(self, params, fb_scraper=None):
         self.params = params
         self.send_to = params.get('send_to')
         # if replace=false then it creates a new file within the folder located at output_path
         # if replace=true, then it replaces output_path with the output contents
         self.replace = params.get('replace') is True
         self.time = int(time.time())
-        self.fb_scraper = None
+        self.fb_scraper = fb_scraper
 
     def convert_timestamp_to_date(self, ts):
         try:
@@ -105,8 +105,8 @@ class OsfScraper:
             if key != 'fb_password':
                 _log('++ param[{}]: {}'.format(key, val))
         # initialize scraper
-        fb_scraper = get_fb_scraper(s_params['fb_username'], fb_password=s_params['fb_password'])
-        self.fb_scraper = fb_scraper
+        if not self.fb_scraper:
+            self.fb_scraper = get_fb_scraper(s_params['fb_username'], fb_password=s_params['fb_password'])
 
         after_date = None
         if s_params.get('after_timestamp'):
@@ -118,7 +118,7 @@ class OsfScraper:
         if s_params.get('jump_to_timestamp'):
             jump_to = self.convert_timestamp_to_date(s_params.get('jump_to_timestamp'))
         # then call function
-        output = fb_scraper.get_posts({
+        output = self.fb_scraper.get_posts({
             'users': s_params['users'],
             'max_num_posts_per_user': s_params.get('max_num_posts_per_user'),
             'after_date': after_date,

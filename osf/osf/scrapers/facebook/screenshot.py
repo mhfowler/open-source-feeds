@@ -84,3 +84,6 @@ def save_post(post, driver, output_path, dpr, log):
         temp_path = 'screenshot.png'
         fullpage_screenshot(driver=driver, file=temp_path, dpr=dpr, log=log)
         crop_and_save(input_path=temp_path, location=location, size=size, output_path=output_path, dpr=dpr, log=log)
+        return True
+    else:
+        return False
