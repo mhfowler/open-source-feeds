@@ -1,8 +1,13 @@
 import os
+import tempfile
 
 import boto3
 
 from osf_scraper_api.settings import ENV_DICT, PROJECT_PATH
+
+
+def get_s3_base_url():
+    return 'https://s3.amazonaws.com/{}'.format(ENV_DICT['S3_BUCKET_NAME'])
 
 
 def get_s3_bucket():
@@ -19,12 +24,16 @@ def s3_upload_file(source_file_path, destination):
     with open(source_file_path, 'r') as f:
         bucket = get_s3_bucket()
         bucket.put_object(Key=destination, Body=f)
+    return '{}/{}'.format(get_s3_base_url(), destination)
 
 
 def s3_get_file_as_string(s3_path):
     bucket = get_s3_bucket()
-    obj = bucket.get_object(Key=s3_path)
-    content = obj.Body
+    f, f_path = tempfile.mkstemp()
+    bucket.download_file(Key=s3_path, Filename=f_path)
+    with open(f_path, 'r') as f:
+        content = f.read()
+    os.unlink(f_path)
     return content
 
 
@@ -40,6 +49,25 @@ def s3_key_exists(s3_path):
         return True
     else:
         return False
+
+
+def s3_folders_in_folder_helper(client, bucket_name, prefix=''):
+    paginator = client.get_paginator('list_objects')
+    for result in paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter='/'):
+        for prefix in result.get('CommonPrefixes', []):
+            yield prefix.get('Prefix')
+
+
+def s3_list_files_in_folder(s3_path):
+    session = boto3.Session(
+        aws_access_key_id=ENV_DICT['AWS_ACCESS_KEY'],
+        aws_secret_access_key=ENV_DICT['AWS_SECRET_KEY'],
+    )
+    client = session.client('s3')
+    bucket_name = ENV_DICT['S3_BUCKET_NAME']
+    keys = client.list_objects(Bucket=bucket_name, Prefix=s3_path)['Contents']
+    to_return = [k['Key'] for k in keys]
+    return to_return
 
 
 if __name__ == '__main__':

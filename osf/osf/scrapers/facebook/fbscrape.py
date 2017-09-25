@@ -1,12 +1,15 @@
 import datetime
 import re
 import time
+import tempfile
+import os
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
+from osf.scrapers.facebook.screenshot import save_post
 
 BASE_URL = 'https://www.facebook.com'
 
@@ -105,14 +108,33 @@ class FbScraper():
     Wrapper class for scraping facebook
     """
 
-    def __init__(self, fb_username, fb_password, command_executor=None, driver=None, log=None):
+    def __init__(self,
+                 fb_username,
+                 fb_password,
+                 command_executor=None,
+                 driver=None,
+                 log=None,
+                 log_image=None,
+                 dpr=1):
         self.fb_username = fb_username
         self.fb_password = fb_password
         self.logged_in = False
-        if command_executor:
+        self.dpr = dpr  # device pixel ratio
+        self.output = {}
+        self.log_fun = log
+        self.log_image_fun = log_image
+        self.driver_has_quit = False
+        self.num_initializations = 0
+        self.command_executor = command_executor
+        self.initialize_driver(driver=driver)
+
+    def initialize_driver(self, driver=None):
+        if self.command_executor:
+            chrome_options = Options()
+            chrome_options.add_argument("--disable-notifications")
             self.driver = webdriver.Remote(
-                command_executor=command_executor,
-                desired_capabilities=DesiredCapabilities.FIREFOX.copy()
+                command_executor=self.command_executor,
+                desired_capabilities=chrome_options.to_capabilities()
             )
         else:
             # chrome is default driver
@@ -123,14 +145,29 @@ class FbScraper():
             # otherwise use the driver passed in
             else:
                 self.driver = driver
-        self.output = {}
-        self.log_fun = log
+
+    def re_initialize_driver(self):
+        try:
+            self.driver.quit()
+        except:
+            pass
+        sleep_time = 2 * (self.num_initializations + 1)
+        self.log('++ sleeping for {}'.format(sleep_time))
+        time.sleep(sleep_time)
+        self.num_initializations += 1
+        self.logged_in = False
+        self.driver_has_quit = False
+        self.initialize_driver()
 
     def log(self, message):
         if self.log_fun:
             self.log_fun(message)
         else:
             print message
+
+    def log_image(self, image_path):
+        if self.log_image_fun:
+            self.log_image_fun(image_path)
 
     def close_dialogs(self):
         """
@@ -142,6 +179,11 @@ class FbScraper():
             for notification in notifications:
                 notification.click()
                 time.sleep(4)
+
+    def screenshot_post(self, post, output_path):
+        if not self.logged_in:
+            self.fb_login()
+        return save_post(post=post, driver=self.driver, output_path=output_path, dpr=self.dpr, log=self.log)
 
     def get_friends(self, users):
         """
@@ -186,7 +228,7 @@ class FbScraper():
             if num_friends == prev_num_friends:
                 j += 1
             prev_num_friends = num_friends
-            if j > 3:
+            if j > 5:
                 break
 
         friends = self.driver.find_elements_by_css_selector('.fsl a')
@@ -204,6 +246,12 @@ class FbScraper():
 
         # return usernames
         return usernames
+
+    def log_screenshot(self):
+        f, f_path = tempfile.mkstemp()
+        self.driver.get_screenshot_as_file(f_path)
+        self.log_image(image_path=f_path)
+        os.unlink(f_path)
 
     def get_posts_by_user(self,
                           user,
@@ -277,8 +325,10 @@ class FbScraper():
                             month_select = month_select[0]
                             month_select.click()
                             time.sleep(2)
+                            self.log('++ successfully jumped to: {}'.format(jump_to))
             except:
                 self.log('++ failed to jump to date: {}'.format(jump_to))
+                self.log_screenshot()
 
         # scroll the page and scrape posts
         posts = {}
@@ -286,6 +336,7 @@ class FbScraper():
         num_consecutive_searches_without_posts = 0
         num_searches = 0
         max_num_searches = 200
+        stop_search_reason = None
         # keep looping until we reach a finished condition
         # (no new posts, > than oldest date, or > max_num_searches)
         while not finished and (num_searches < max_num_searches):
@@ -301,7 +352,7 @@ class FbScraper():
 
             # grab the posts
             # found_posts = self.driver.find_elements_by_css_selector('a._5pcq')
-            found_sel_posts = self.driver.find_elements_by_css_selector('div.fbUserPost')
+            found_sel_posts = self.driver.find_elements_by_css_selector('div.fbUserContent, div.fbUserContent')
             found_posts = [Post(x) for x in found_sel_posts]
             # filter out malformed posts
             found_posts = filter(lambda p: p.is_valid(), found_posts)
@@ -315,22 +366,22 @@ class FbScraper():
                 # if there have been 3 searches in a row without any new posts, then break the loop
                 if num_consecutive_searches_without_posts >= 5:
                     finished = True
-                    self.log('++ stopping search due to too many searches without finding any posts')
+                    stop_search_reason = '++ stopping search due to too many searches without finding any posts'
             else:
                 self.log('++ found {} posts'.format(len(new_posts)))
 
             # calculate how many posts
-            num_posts = len(posts.keys())
+            num_posts_already = len(posts.keys())
 
             # if max_num_posts_per_user, check if we have exceeded the limit
             if max_num_posts_per_user:
-                num_posts_remaining = max_num_posts_per_user - num_posts
+                num_posts_remaining = max_num_posts_per_user - num_posts_already
                 if len(new_posts) > num_posts_remaining:
                     # end the for loop
                     finished = True
                     # and truncate new_posts
                     new_posts = new_posts[:num_posts_remaining]
-                    self.log('++ stopping search due to max_num_posts_per_user')
+                    stop_search_reason = '++ stopping search due to max_num_posts_per_user'
 
             # iterate through new posts and parse and save them
             for post in new_posts:
@@ -339,7 +390,7 @@ class FbScraper():
                 if timestamp:
                     # if we found a post older than the given date, then stop downloading
                     if after_timestamp and timestamp < after_timestamp:
-                        self.log('++ stopping search due to after_date')
+                        stop_search_reason = '++ stopping search due to after_date'
                         finished = True
                     # otherwise add the post to the list of found posts
                     else:
@@ -351,6 +402,9 @@ class FbScraper():
                             }
                 else:
                     pass
+
+        if stop_search_reason:
+            self.log(stop_search_reason)
 
         # convert dictionary of posts to a list
         to_return = []
@@ -385,6 +439,7 @@ class FbScraper():
         self.logged_in = True
 
     def assert_logged_in(self):
+        # self.log_screenshot()
         elements = self.driver.find_elements_by_css_selector('._1k67')
         if not len(elements):
             raise Exception('++ failed to assert that driver is logged in')
@@ -420,7 +475,10 @@ class FbScraper():
         return self.output
 
     def quit_driver(self):
-        self.driver.quit()
+        if not self.driver_has_quit:
+            self.log('++ quitting driver')
+            self.driver.quit()
+            self.driver_has_quit = True
 
 
 if __name__ == '__main__':
