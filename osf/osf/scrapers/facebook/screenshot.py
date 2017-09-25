@@ -44,7 +44,7 @@ def crop_and_save(input_path, location, size, output_path, dpr):
     left = location['x'] - padding
     top = location['y'] - padding
     right = location['x'] + size['width'] + padding
-    bottom = location['y'] + size['height'] + padding
+    bottom = location['y'] + size['height'] + padding + 5
 
     im = im.crop((left, top, right, bottom)) # defines crop points
     im.save(output_path)
