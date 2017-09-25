@@ -36,9 +36,9 @@ def fullpage_screenshot(driver, file, dpr):
     return True
 
 
-def crop_and_save(input_path, location, size, output_path):
+def crop_and_save(input_path, location, size, output_path, dpr):
 
-    padding = 15
+    padding = 7.5 * dpr
     im = Image.open(input_path) # uses PIL library to open image in memory
 
     left = location['x'] - padding
@@ -67,4 +67,4 @@ def save_post(post, driver, output_path, dpr):
         size = {'width': (element.size['width'] * dpr), 'height': element.size['height'] * dpr}
         temp_path = 'screenshot.png'
         fullpage_screenshot(driver=driver, file=temp_path, dpr=dpr)
-        crop_and_save(input_path=temp_path, location=location, size=size, output_path=output_path)
+        crop_and_save(input_path=temp_path, location=location, size=size, output_path=output_path, dpr=dpr)
