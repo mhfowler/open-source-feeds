@@ -108,7 +108,9 @@ class FbScraper():
     Wrapper class for scraping facebook
     """
 
-    def __init__(self, fb_username, fb_password,
+    def __init__(self,
+                 fb_username,
+                 fb_password,
                  command_executor=None,
                  driver=None,
                  log=None,
@@ -118,11 +120,20 @@ class FbScraper():
         self.fb_password = fb_password
         self.logged_in = False
         self.dpr = dpr  # device pixel ratio
-        if command_executor:
+        self.output = {}
+        self.log_fun = log
+        self.log_image_fun = log_image
+        self.driver_has_quit = False
+        self.num_initializations = 0
+        self.command_executor = command_executor
+        self.initialize_driver(driver=driver)
+
+    def initialize_driver(self, driver=None):
+        if self.command_executor:
             chrome_options = Options()
             chrome_options.add_argument("--disable-notifications")
             self.driver = webdriver.Remote(
-                command_executor=command_executor,
+                command_executor=self.command_executor,
                 desired_capabilities=chrome_options.to_capabilities()
             )
         else:
@@ -134,10 +145,19 @@ class FbScraper():
             # otherwise use the driver passed in
             else:
                 self.driver = driver
-        self.output = {}
-        self.log_fun = log
-        self.log_image_fun = log_image
+
+    def re_initialize_driver(self):
+        try:
+            self.driver.quit()
+        except:
+            pass
+        sleep_time = 2 * (self.num_initializations + 1)
+        self.log('++ sleeping for {}'.format(sleep_time))
+        time.sleep(sleep_time)
+        self.num_initializations += 1
+        self.logged_in = False
         self.driver_has_quit = False
+        self.initialize_driver()
 
     def log(self, message):
         if self.log_fun:
@@ -163,7 +183,7 @@ class FbScraper():
     def screenshot_post(self, post, output_path):
         if not self.logged_in:
             self.fb_login()
-        save_post(post=post, driver=self.driver, output_path=output_path, dpr=self.dpr)
+        save_post(post=post, driver=self.driver, output_path=output_path, dpr=self.dpr, log=self.log)
 
     def get_friends(self, users):
         """

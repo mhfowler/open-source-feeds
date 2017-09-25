@@ -3,11 +3,12 @@ import os
 import re
 import hashlib
 import datetime
+import time
 
 from osf_scraper_api.utilities.fs_helper import load_dict
-from osf_scraper_api.utilities.log_helper import _log, _log_image
+from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.utilities.osf_helper import get_fb_scraper
-from osf_scraper_api.settings import SELENIUM_URL
+from osf_scraper_api.settings import ENV_DICT
 from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
 from osf_scraper_api.utilities.fs_helper import save_file
 
@@ -40,8 +41,8 @@ def screenshot_job(user_file, input_folder, no_skip, fb_username, fb_password):
             d = datetime.datetime.fromtimestamp(int(post['date']))
             date_str = d.strftime('%b%d')
         except:
-            date_str = ''
-        output_key = 'screenshots/{}-{}-{}.png'.format(user, post_id, date_str)
+            date_str = 'None'
+        output_key = 'screenshots/{}-{}-{}.png'.format(user, date_str, post_id)
         if no_skip:
             if file_exists(output_key):
                 _log('++ skipping {}'.format(output_key))
@@ -56,10 +57,10 @@ def screenshot_job(user_file, input_folder, no_skip, fb_username, fb_password):
         _log('++ skipping {}, no posts to screenshot'.format(user))
 
 
-def screenshot_posts(posts, fb_username, fb_password):
-
-    fb_scraper = get_fb_scraper(fb_username=fb_username, fb_password=fb_password)
-    for post in posts:
+def screenshot_post(post, fb_scraper=None, fb_username=None, fb_password=None):
+    try:
+        if not fb_scraper:
+            fb_scraper = get_fb_scraper(fb_username=fb_username, fb_password=fb_password)
         output_path = post['screenshot_path']
         _log('++ saving screenshot of post: {}'.format(post['link']))
         f = tempfile.NamedTemporaryFile(delete=False)
@@ -70,3 +71,24 @@ def screenshot_posts(posts, fb_username, fb_password):
         os.unlink(f.name)
         os.unlink(temp_path)
         _log('++ successfuly uploaded to: {}'.format(image_url))
+    except Exception as e:
+        _capture_exception(e)
+        if fb_scraper.num_initializations < 3:
+            _log('++ retrying attempt {}'.format(fb_scraper.num_initializations))
+            fb_scraper.re_initialize_driver()
+            return screenshot_post(post=post, fb_scraper=fb_scraper)
+        else:
+            if ENV_DICT.get('DOCKER_RESTART'):
+                _log('++ restarting docker chrome container')
+                os.system('/usr/local/bin/docker-compose -f /srv/docker-compose.yml restart selenium')
+                time.sleep(5)
+                _log('++ chrome restarted')
+            _log('++ giving up on {}'.format(post['link']))
+            raise e
+
+
+def screenshot_posts(posts, fb_username, fb_password):
+    fb_scraper = get_fb_scraper(fb_username=fb_username, fb_password=fb_password)
+    for post in posts:
+        screenshot_post(fb_scraper=fb_scraper, post=post)
+

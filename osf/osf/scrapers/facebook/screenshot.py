@@ -5,7 +5,7 @@ import math
 from PIL import Image
 
 
-def fullpage_screenshot(driver, file, dpr):
+def fullpage_screenshot(driver, file, dpr, log):
 
     total_width = driver.execute_script("return document.body.offsetWidth")
     total_height = driver.execute_script("return document.body.parentNode.scrollHeight")
@@ -36,7 +36,7 @@ def fullpage_screenshot(driver, file, dpr):
     return True
 
 
-def crop_and_save(input_path, location, size, output_path, dpr):
+def crop_and_save(input_path, location, size, output_path, dpr, log):
 
     padding = 9 * dpr
     im = Image.open(input_path) # uses PIL library to open image in memory
@@ -50,7 +50,7 @@ def crop_and_save(input_path, location, size, output_path, dpr):
     im.save(output_path)
 
 
-def save_post(post, driver, output_path, dpr):
+def save_post(post, driver, output_path, dpr, log):
     link = post['link']
     driver.get(link)
     time.sleep(2)
@@ -66,5 +66,5 @@ def save_post(post, driver, output_path, dpr):
         location = {'y': element.location['y'] * dpr, 'x': element.location['x'] * dpr}
         size = {'width': (element.size['width'] * dpr), 'height': element.size['height'] * dpr}
         temp_path = 'screenshot.png'
-        fullpage_screenshot(driver=driver, file=temp_path, dpr=dpr)
-        crop_and_save(input_path=temp_path, location=location, size=size, output_path=output_path, dpr=dpr)
+        fullpage_screenshot(driver=driver, file=temp_path, dpr=dpr, log=log)
+        crop_and_save(input_path=temp_path, location=location, size=size, output_path=output_path, dpr=dpr, log=log)
