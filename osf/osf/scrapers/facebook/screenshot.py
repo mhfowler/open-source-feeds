@@ -54,11 +54,27 @@ def save_post(post, driver, output_path, dpr, log):
     link = post['link']
     driver.get(link)
     time.sleep(2)
-    x_elements = driver.find_elements_by_css_selector('._418x')
-    if x_elements:
-        x = x_elements[0]
-        x.click()
-        time.sleep(2)
+
+    # try to click x elements
+    try:
+        x_elements = driver.find_elements_by_css_selector('._418x, _xlt, _418x')
+        if x_elements:
+            x = x_elements[0]
+            x.click()
+            time.sleep(2)
+    except:
+        pass
+
+    # try to click the body
+    try:
+        x_elements = driver.find_elements_by_css_selector('._n9')
+        if x_elements:
+            x = x_elements[0]
+            x.click()
+            time.sleep(1)
+    except:
+        pass
+
 
     elements = driver.find_elements_by_css_selector('._1w_m')
     if elements:
