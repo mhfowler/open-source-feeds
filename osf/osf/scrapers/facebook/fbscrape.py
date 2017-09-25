@@ -439,7 +439,7 @@ class FbScraper():
         self.logged_in = True
 
     def assert_logged_in(self):
-        self.log_screenshot()
+        # self.log_screenshot()
         elements = self.driver.find_elements_by_css_selector('._1k67')
         if not len(elements):
             raise Exception('++ failed to assert that driver is logged in')

@@ -72,17 +72,18 @@ def screenshot_post(post, fb_scraper=None, fb_username=None, fb_password=None):
         os.unlink(temp_path)
         _log('++ successfuly uploaded to: {}'.format(image_url))
     except Exception as e:
-        _capture_exception(e)
-        if fb_scraper.num_initializations < 3:
+        if fb_scraper.num_initializations < 5:
             _log('++ retrying attempt {}'.format(fb_scraper.num_initializations))
             fb_scraper.re_initialize_driver()
             return screenshot_post(post=post, fb_scraper=fb_scraper)
         else:
-            if ENV_DICT.get('DOCKER_RESTART'):
-                _log('++ restarting docker chrome container')
-                os.system('/usr/local/bin/docker-compose -f /srv/docker-compose.yml restart selenium')
-                time.sleep(5)
-                _log('++ chrome restarted')
+            # if ENV_DICT.get('DOCKER_RESTART'):
+            #     _log('++ restarting docker chrome container')
+            #     os.system('sudo /usr/local/bin/docker-compose -f /srv/docker-compose.yml restart selenium')
+            #     time.sleep(5)
+            #     _log('++ chrome restarted')
+            _log('++ sleeping 90 (waiting for selenium to restart)')
+            time.sleep(90)
             _log('++ giving up on {}'.format(post['link']))
             raise e
 
