@@ -7,7 +7,7 @@ from flask import make_response, jsonify, Blueprint, request
 from osf_scraper_api.utilities.fb_helper import fetch_friends_of_user
 from osf_scraper_api.web.jobs.fb_posts import scrape_fb_posts
 from osf_scraper_api.web.jobs.fb_friends import scrape_fb_friends
-from osf_scraper_api.web.jobs.screenshot import screenshot_job
+from osf_scraper_api.web.jobs.screenshot import screenshot_user_job, screenshot_multi_user_job
 from osf_scraper_api.web.jobs.test_rq import test_rq
 from osf_scraper_api.utilities.log_helper import _log
 from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder
@@ -95,16 +95,30 @@ def get_facebook_blueprint(osf_queue):
         fb_username = params['fb_username']
         fb_password = params['fb_password']
         _log('++ enqueuing screenshot jobs for {} users'.format(len(user_files)))
-        for user_file in user_files:
-            osf_queue.enqueue(screenshot_job,
-                user_file=user_file,
-                input_folder=input_folder,
-                fb_username=fb_username,
-                fb_password=fb_password,
-                no_skip=no_skip,
-                timeout=600
-            )
-        _log('++ enqueued all {} screenshot jobs'.format(len(user_files)))
+        job_per_user = params.get('job_per_user')
+        # if job_per_user, then make one job for each user
+        if job_per_user:
+            for user_file in user_files:
+                osf_queue.enqueue(screenshot_user_job,
+                                  user_file=user_file,
+                                  input_folder=input_folder,
+                                  fb_username=fb_username,
+                                  fb_password=fb_password,
+                                  no_skip=no_skip,
+                                  timeout=600
+                                  )
+            _log('++ enqueued screenshot jobs for all {} users'.format(len(user_files)))
+        # otherwise make a single job for all the posts
+        else:
+            osf_queue.enqueue(screenshot_multi_user_job,
+                              user_files=user_files[:10],
+                              input_folder=input_folder,
+                              fb_username=fb_username,
+                              fb_password=fb_password,
+                              no_skip=no_skip,
+                              timeout=600
+                              )
+            _log('++ enqueued 1 job for {} users'.format(len(user_files)))
         return make_response(jsonify({
             'message': 'fb_screenshot job enqueued'
         }), 200)
