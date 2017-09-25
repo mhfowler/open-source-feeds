@@ -38,13 +38,13 @@ def fullpage_screenshot(driver, file, dpr):
 
 def crop_and_save(input_path, location, size, output_path, dpr):
 
-    padding = 7.5 * dpr
+    padding = 9 * dpr
     im = Image.open(input_path) # uses PIL library to open image in memory
 
     left = location['x'] - padding
     top = location['y'] - padding
-    right = location['x'] + size['width'] + 2*padding
-    bottom = location['y'] + size['height'] + 2*padding
+    right = location['x'] + size['width'] + padding
+    bottom = location['y'] + size['height'] + padding
 
     im = im.crop((left, top, right, bottom)) # defines crop points
     im.save(output_path)
