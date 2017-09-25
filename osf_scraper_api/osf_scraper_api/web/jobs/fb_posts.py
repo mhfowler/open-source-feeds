@@ -4,7 +4,7 @@ import os
 import datetime
 
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception, _log_image
-from osf.scrapers.facebook import FbScraper
+from osf_scraper_api.utilities.osf_helper import get_fb_scraper
 from osf_scraper_api.utilities.email_helper import send_email
 from osf_scraper_api.settings import SELENIUM_URL, DATA_DIR
 from osf_scraper_api.utilities.fs_helper import save_dict
@@ -105,13 +105,7 @@ class OsfScraper:
             if key != 'fb_password':
                 _log('++ param[{}]: {}'.format(key, val))
         # initialize scraper
-        fb_scraper = FbScraper(
-            fb_username=s_params['fb_username'],
-            fb_password=s_params['fb_password'],
-            command_executor=SELENIUM_URL,
-            log=_log,
-            log_image=_log_image,
-        )
+        fb_scraper = get_fb_scraper(s_params['fb_username'], fb_password=s_params['fb_password'])
         self.fb_scraper = fb_scraper
 
         after_date = None

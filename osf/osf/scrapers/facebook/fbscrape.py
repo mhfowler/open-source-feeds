@@ -108,10 +108,16 @@ class FbScraper():
     Wrapper class for scraping facebook
     """
 
-    def __init__(self, fb_username, fb_password, command_executor=None, driver=None, log=None, log_image=None):
+    def __init__(self, fb_username, fb_password,
+                 command_executor=None,
+                 driver=None,
+                 log=None,
+                 log_image=None,
+                 dpr=1):
         self.fb_username = fb_username
         self.fb_password = fb_password
         self.logged_in = False
+        self.dpr = dpr  # device pixel ratio
         if command_executor:
             chrome_options = Options()
             chrome_options.add_argument("--disable-notifications")
@@ -157,7 +163,7 @@ class FbScraper():
     def screenshot_post(self, post, output_path):
         if not self.logged_in:
             self.fb_login()
-        save_post(post=post, driver=self.driver, output_path=output_path)
+        save_post(post=post, driver=self.driver, output_path=output_path, dpr=self.dpr)
 
     def get_friends(self, users):
         """

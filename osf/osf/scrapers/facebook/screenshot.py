@@ -1,14 +1,11 @@
 import os
-import json
-import datetime
 import time
 import math
 
 from PIL import Image
 
 
-def fullpage_screenshot(driver, file):
-    dpr = 2
+def fullpage_screenshot(driver, file, dpr):
 
     total_width = driver.execute_script("return document.body.offsetWidth")
     total_height = driver.execute_script("return document.body.parentNode.scrollHeight")
@@ -53,7 +50,7 @@ def crop_and_save(input_path, location, size, output_path):
     im.save(output_path)
 
 
-def save_post(post, driver, output_path):
+def save_post(post, driver, output_path, dpr):
     link = post['link']
     driver.get(link)
     time.sleep(2)
@@ -66,9 +63,8 @@ def save_post(post, driver, output_path):
     elements = driver.find_elements_by_css_selector('._1w_m')
     if elements:
         element = elements[0]
-        dpr = 2  # device_pixel_ratio
         location = {'y': element.location['y'] * dpr, 'x': element.location['x'] * dpr}
         size = {'width': (element.size['width'] * dpr), 'height': element.size['height'] * dpr}
         temp_path = 'screenshot.png'
-        fullpage_screenshot(driver=driver, file=temp_path)
+        fullpage_screenshot(driver=driver, file=temp_path, dpr=dpr)
         crop_and_save(input_path=temp_path, location=location, size=size, output_path=output_path)

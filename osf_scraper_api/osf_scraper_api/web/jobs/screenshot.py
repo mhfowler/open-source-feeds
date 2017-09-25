@@ -6,14 +6,13 @@ import datetime
 
 from osf_scraper_api.utilities.fs_helper import load_dict
 from osf_scraper_api.utilities.log_helper import _log, _log_image
-from osf.scrapers.facebook import FbScraper
+from osf_scraper_api.utilities.osf_helper import get_fb_scraper
 from osf_scraper_api.settings import SELENIUM_URL
 from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
 from osf_scraper_api.utilities.fs_helper import save_file
 
 
-def screenshot_job(user_file, input_folder, no_skip, fb_username, fb_password):
-    _log('++ starting screenshots job for: {}'.format(user_file))
+def get_user_from_user_file(user_file, input_folder):
     match = re.match('(.*)\.json', user_file)
     if match:
         user = match.group(1)
@@ -22,6 +21,12 @@ def screenshot_job(user_file, input_folder, no_skip, fb_username, fb_password):
     user = user.replace(input_folder, '')
     if user.startswith('/'):
         user = user[1:]
+    return user
+
+
+def screenshot_job(user_file, input_folder, no_skip, fb_username, fb_password):
+    _log('++ starting screenshots job for: {}'.format(user_file))
+    user = get_user_from_user_file(user_file=user_file, input_folder=input_folder)
     user_posts = load_dict(user_file)['posts'][user]
     posts_to_scrape = []
     for post in user_posts:
@@ -53,14 +58,7 @@ def screenshot_job(user_file, input_folder, no_skip, fb_username, fb_password):
 
 def screenshot_posts(posts, fb_username, fb_password):
 
-    fb_scraper = FbScraper(
-        fb_username=fb_username,
-        fb_password=fb_password,
-        command_executor=SELENIUM_URL,
-        log=_log,
-        log_image=_log_image,
-    )
-
+    fb_scraper = get_fb_scraper(fb_username=fb_username, fb_password=fb_password)
     for post in posts:
         output_path = post['screenshot_path']
         _log('++ saving screenshot of post: {}'.format(post['link']))
