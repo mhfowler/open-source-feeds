@@ -111,7 +111,7 @@ def get_facebook_blueprint(osf_queue):
         # otherwise make a single job for all the posts
         else:
             osf_queue.enqueue(screenshot_multi_user_job,
-                              user_files=user_files[-2:],
+                              user_files=user_files,
                               input_folder=input_folder,
                               fb_username=fb_username,
                               fb_password=fb_password,
