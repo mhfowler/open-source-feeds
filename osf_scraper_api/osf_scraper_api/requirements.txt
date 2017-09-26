@@ -12,3 +12,4 @@ flask-mail==0.9.1
 boto3==1.4.7
 selenium==3.5.0
 Pillow==4.2.1
+boto==2.48.0

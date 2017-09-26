@@ -2,6 +2,7 @@ import os
 import tempfile
 
 import boto3
+from boto.s3.connection import S3Connection
 
 from osf_scraper_api.settings import ENV_DICT, PROJECT_PATH
 
@@ -59,19 +60,11 @@ def s3_folders_in_folder_helper(client, bucket_name, prefix=''):
 
 
 def s3_list_files_in_folder(s3_path):
-    session = boto3.Session(
-        aws_access_key_id=ENV_DICT['AWS_ACCESS_KEY'],
-        aws_secret_access_key=ENV_DICT['AWS_SECRET_KEY'],
-    )
-    client = session.client('s3')
-    bucket_name = ENV_DICT['S3_BUCKET_NAME']
-    keys = client.list_objects(Bucket=bucket_name, Prefix=s3_path)
-    if keys.get('Contents'):
-        keys = keys['Contents']
-        to_return = [k['Key'] for k in keys]
-    else:
-        to_return = []
-    return to_return
+    conn = S3Connection(ENV_DICT['AWS_ACCESS_KEY'], ENV_DICT['AWS_SECRET_KEY'])
+    bucket = conn.get_bucket(ENV_DICT['S3_BUCKET_NAME'])
+    keys = bucket.list(prefix=s3_path)
+    keys = [k.name for k in keys]
+    return keys
 
 
 if __name__ == '__main__':
