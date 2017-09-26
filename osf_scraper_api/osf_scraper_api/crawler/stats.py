@@ -1,6 +1,6 @@
 from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder
-from osf_scraper_api.crawler.utils import get_user_from_user_file, get_posts_folder
-from osf_scraper_api.utilities.fb_helper import fetch_friends_of_user
+from osf_scraper_api.crawler.utils import get_user_from_user_file, get_posts_folder, get_unprocessed_friends
+from osf_scraper_api.crawler.utils import fetch_friends_of_user
 
 
 def get_stats(user):
@@ -24,3 +24,4 @@ def get_stats(user):
 
 if __name__ == '__main__':
     get_stats('maxhfowler')
+    # print get_unprocessed_friends('maxhfowler')
