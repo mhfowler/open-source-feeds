@@ -11,18 +11,7 @@ from osf_scraper_api.utilities.osf_helper import get_fb_scraper, paginate_list
 from osf_scraper_api.settings import ENV_DICT
 from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
 from osf_scraper_api.utilities.fs_helper import save_file
-
-
-def get_user_from_user_file(user_file, input_folder):
-    match = re.match('(.*)\.json', user_file)
-    if match:
-        user = match.group(1)
-    else:
-        user = user_file
-    user = user.replace(input_folder, '')
-    if user.startswith('/'):
-        user = user[1:]
-    return user
+from osf_scraper_api.whats_on_your_mind.utils import get_user_from_user_file
 
 
 def get_screenshot_output_key_from_post(user, post):
