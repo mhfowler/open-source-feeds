@@ -8,10 +8,9 @@ import time
 from osf_scraper_api.utilities.fs_helper import load_dict
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.utilities.osf_helper import get_fb_scraper, paginate_list
-from osf_scraper_api.settings import ENV_DICT
-from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
+from osf_scraper_api.utilities.fs_helper import file_exists
 from osf_scraper_api.utilities.fs_helper import save_file
-from osf_scraper_api.whats_on_your_mind.utils import get_user_from_user_file
+from osf_scraper_api.crawler.utils import get_user_from_user_file
 
 
 def get_screenshot_output_key_from_post(user, post):

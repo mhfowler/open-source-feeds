@@ -1,33 +1,21 @@
-import re
-import hashlib
-import datetime
-import random
-
 from flask import make_response, jsonify, Blueprint, request
 
-from osf_scraper_api.utilities.fb_helper import fetch_friends_of_user
-from osf_scraper_api.web.jobs.fb_posts import scrape_fb_posts, scrape_fb_posts_job
-from osf_scraper_api.web.jobs.fb_friends import scrape_fb_friends
-from osf_scraper_api.utilities.osf_helper import paginate_list, get_fb_scraper
-from osf_scraper_api.web.jobs.screenshot import screenshot_user_job, screenshot_multi_user_job
-from osf_scraper_api.web.jobs.test_rq import test_rq
-from osf_scraper_api.utilities.log_helper import _log, _capture_exception
-from osf_scraper_api.whats_on_your_mind.stats import get_unprocessed_friends
-from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder
+from osf_scraper_api.crawler.fb_posts import scrape_fb_posts_job
+from osf_scraper_api.crawler.screenshot import screenshot_user_job, screenshot_multi_user_job
+from osf_scraper_api.crawler.utils import fetch_friends_of_user
+from osf_scraper_api.crawler.utils import get_unprocessed_friends
+from osf_scraper_api.crawler.utils import get_user_posts_file
+from osf_scraper_api.jobs.fb_friends import scrape_fb_friends
 from osf_scraper_api.settings import TEMPLATE_DIR
+from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder
+from osf_scraper_api.utilities.log_helper import _log
+from osf_scraper_api.utilities.osf_helper import paginate_list
 
 
-def get_facebook_blueprint(osf_queue):
-    facebook_blueprint = Blueprint('facebook_blueprint', __name__, template_folder=TEMPLATE_DIR)
+def get_crawler_blueprint(osf_queue):
+    crawler_blueprint = Blueprint('crawler_blueprint', __name__, template_folder=TEMPLATE_DIR)
 
-    @facebook_blueprint.route('/api/test_rq/<test_id>/', methods=['GET'])
-    def test_rq_endpoint(test_id):
-        osf_queue.enqueue(test_rq, test_id)
-        return make_response(jsonify({
-            'message': 'Job enqueued for scraping.'
-        }), 200)
-
-    @facebook_blueprint.route('/api/fb_friends/', methods=['POST'])
+    @crawler_blueprint.route('/api/crawler/fb_friends/', methods=['POST'])
     def fb_friends_endpoint():
         params = request.get_json()
         users = params.get('users')
@@ -54,35 +42,28 @@ def get_facebook_blueprint(osf_queue):
             'message': 'fb_friend job enqueued'
         }), 200)
 
-    @facebook_blueprint.route('/api/fb_posts/', methods=['POST'])
+    @crawler_blueprint.route('/api/crawler/fb_posts/', methods=['POST'])
     def fb_posts_endpoint():
         params = request.get_json()
-        job_name = 'whats_on_your_mind'
         users = params.get('users')
         if users == 'all_friends':
             central_user = params.get('central_user')
             _log('++ looking up users from friends of central_user: {}'.format(central_user))
             users = fetch_friends_of_user(central_user)
             users_to_scrape = get_unprocessed_friends(central_user)
-            output_paths = {}
-            for user in users_to_scrape:
-                key_name = 'jobs/{}/{}.json'.format(job_name, user)
-                output_paths[user] = key_name
         else:
             users_to_scrape = []
-            output_paths = {}
             num_skipped = 0
             num_users = len(users)
             for index, user in enumerate(users):
                 if not index % 10:
                     _log('++ {}/{}'.format(index, num_users))
-                key_name = 'jobs/{}/{}.json'.format(job_name, user)
+                key_name = get_user_posts_file(user)
                 # if already exists then skip
                 if params.get('no_skip') is not True:
                     if file_exists(key_name):
                         num_skipped +=1
                         continue
-                output_paths[user] = key_name
                 users_to_scrape.append(user)
             _log('++ skipped {} users'.format(num_skipped))
 
@@ -97,7 +78,6 @@ def get_facebook_blueprint(osf_queue):
             osf_queue.enqueue(scrape_fb_posts_job,
                 users=page,
                 params=params,
-                output_paths=output_paths,
                 fb_username=params['fb_username'],
                 fb_password=params['fb_password'],
                 timeout=5000
@@ -107,7 +87,7 @@ def get_facebook_blueprint(osf_queue):
             'message': 'fb_post job enqueued'
         }), 200)
 
-    @facebook_blueprint.route('/api/fb_screenshots/', methods=['POST'])
+    @crawler_blueprint.route('/api/crawler/fb_screenshots/', methods=['POST'])
     def fb_screenshots_endpoint():
         params = request.get_json()
         input_folder = params['input_folder']
@@ -143,4 +123,4 @@ def get_facebook_blueprint(osf_queue):
             'message': 'fb_screenshot job enqueued'
         }), 200)
 
-    return facebook_blueprint
+    return crawler_blueprint

@@ -3,10 +3,11 @@ from flask import Flask, Response, request, render_template
 from redis import StrictRedis
 from rq import Queue
 
+from osf_scraper_api.api.facebook import get_facebook_blueprint
+from osf_scraper_api.api.helper import get_helpers_blueprint
+from osf_scraper_api.crawler.crawler_api import get_crawler_blueprint
 from osf_scraper_api.settings import PROJECT_PATH, TEMPLATE_DIR, ENV_DICT, DEFAULT_JOB_TIMEOUT
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
-from osf_scraper_api.web.api.helper import get_helpers_blueprint
-from osf_scraper_api.web.api.facebook import get_facebook_blueprint
 from osf_scraper_api.web.extensions import sentry, mail
 
 
@@ -62,6 +63,7 @@ def create_app():
     # register blueprints
     app.register_blueprint(get_helpers_blueprint())
     app.register_blueprint(get_facebook_blueprint(osf_queue))
+    app.register_blueprint(get_crawler_blueprint(osf_queue))
     app.register_blueprint(rq_dashboard.blueprint, url_prefix='/rq')
 
     # configure sentry

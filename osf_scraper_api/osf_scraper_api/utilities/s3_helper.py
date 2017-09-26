@@ -65,8 +65,12 @@ def s3_list_files_in_folder(s3_path):
     )
     client = session.client('s3')
     bucket_name = ENV_DICT['S3_BUCKET_NAME']
-    keys = client.list_objects(Bucket=bucket_name, Prefix=s3_path)['Contents']
-    to_return = [k['Key'] for k in keys]
+    keys = client.list_objects(Bucket=bucket_name, Prefix=s3_path)
+    if keys.get('Contents'):
+        keys = keys['Contents']
+        to_return = [k['Key'] for k in keys]
+    else:
+        to_return = []
     return to_return
 
 
