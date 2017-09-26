@@ -6,12 +6,12 @@ import random
 from flask import make_response, jsonify, Blueprint, request
 
 from osf_scraper_api.utilities.fb_helper import fetch_friends_of_user
-from osf_scraper_api.web.jobs.fb_posts import scrape_fb_posts
+from osf_scraper_api.web.jobs.fb_posts import scrape_fb_posts, scrape_fb_posts_job
 from osf_scraper_api.web.jobs.fb_friends import scrape_fb_friends
-from osf_scraper_api.utilities.osf_helper import paginate_list
+from osf_scraper_api.utilities.osf_helper import paginate_list, get_fb_scraper
 from osf_scraper_api.web.jobs.screenshot import screenshot_user_job, screenshot_multi_user_job
 from osf_scraper_api.web.jobs.test_rq import test_rq
-from osf_scraper_api.utilities.log_helper import _log
+from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder
 from osf_scraper_api.settings import TEMPLATE_DIR
 
@@ -65,6 +65,9 @@ def get_facebook_blueprint(osf_queue):
                 central_user = params.get('central_user')
                 _log('++ looking up users from friends of central_user: {}'.format(central_user))
                 users = fetch_friends_of_user(central_user)
+            fb_scraper = get_fb_scraper(fb_username=params['fb_username'], fb_password=params['fb_password'])
+            users_to_scrape = []
+            output_paths = {}
             for user in users:
                 key_name = 'jobs/{}/{}.json'.format(job_name, user)
                 # if already exists then skip
@@ -72,14 +75,21 @@ def get_facebook_blueprint(osf_queue):
                     if file_exists(key_name):
                         _log('++ skipping {}'.format(key_name))
                         continue
-                # otherwise scrape and then save this user
-                params['users'] = [user]
-                params['output_path'] = key_name
-                params['replace'] = True
-                if params.get('job_name'):
-                    del params['job_name']
-                _log('++ enqueing fb_posts job for user {}'.format(user))
-                osf_queue.enqueue(scrape_fb_posts, params)
+                output_paths[user] = key_name
+                users_to_scrape.append(user)
+            _log('++ preparing to scrape {} users'.format(len(users_to_scrape)))
+            pages = paginate_list(mylist=users_to_scrape, page_size=100)
+            _log('++ enqueing {} users in {} jobs'.format(len(users_to_scrape), len(pages)))
+            for index, page in enumerate(pages):
+                _log('++ enqueing {} job'.format(index))
+                osf_queue.enqueue(scrape_fb_posts_job,
+                    users=page,
+                    params=params,
+                    output_paths=output_paths,
+                    fb_username=params['fb_username'],
+                    fb_password=params['fb_password'],
+                    timeout=5000
+                )
         else:
             _log('++ enqueing fb_posts job')
             osf_queue.enqueue(scrape_fb_posts, params)
