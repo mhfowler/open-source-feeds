@@ -6,8 +6,7 @@ from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folde
 
 
 def get_posts_folder():
-    # return 'jobs/whats_on_your_mind'
-    return 'jobs/test'
+    return 'jobs/whats_on_your_mind'
 
 
 def get_user_from_user_file(user_file, input_folder):
