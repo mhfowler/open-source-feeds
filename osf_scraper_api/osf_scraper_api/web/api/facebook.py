@@ -1,12 +1,14 @@
 import re
 import hashlib
 import datetime
+import random
 
 from flask import make_response, jsonify, Blueprint, request
 
 from osf_scraper_api.utilities.fb_helper import fetch_friends_of_user
 from osf_scraper_api.web.jobs.fb_posts import scrape_fb_posts
 from osf_scraper_api.web.jobs.fb_friends import scrape_fb_friends
+from osf_scraper_api.utilities.osf_helper import paginate_list
 from osf_scraper_api.web.jobs.screenshot import screenshot_user_job, screenshot_multi_user_job
 from osf_scraper_api.web.jobs.test_rq import test_rq
 from osf_scraper_api.utilities.log_helper import _log
@@ -110,15 +112,14 @@ def get_facebook_blueprint(osf_queue):
             _log('++ enqueued screenshot jobs for all {} users'.format(len(user_files)))
         # otherwise make a single job for all the posts
         else:
-            osf_queue.enqueue(screenshot_multi_user_job,
-                              user_files=user_files,
-                              input_folder=input_folder,
-                              fb_username=fb_username,
-                              fb_password=fb_password,
-                              no_skip=no_skip,
-                              timeout=129600
-                              )
-            _log('++ enqueued 1 job for {} users'.format(len(user_files)))
+            screenshot_multi_user_job(
+              user_files=user_files,
+              input_folder=input_folder,
+              fb_username=fb_username,
+              fb_password=fb_password,
+              no_skip=no_skip,
+              osf_queue=osf_queue
+            )
         return make_response(jsonify({
             'message': 'fb_screenshot job enqueued'
         }), 200)
