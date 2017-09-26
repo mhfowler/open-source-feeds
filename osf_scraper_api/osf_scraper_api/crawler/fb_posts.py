@@ -8,11 +8,35 @@ from osf_scraper_api.utilities.osf_helper import get_fb_scraper
 from osf_scraper_api.utilities.email_helper import send_email
 from osf_scraper_api.settings import SELENIUM_URL, DATA_DIR
 from osf_scraper_api.utilities.fs_helper import save_dict
+from osf_scraper_api.crawler.utils import get_user_posts_file
 
 
-def scrape_fb_posts(params):
+def scrape_fb_posts_job(users, params, fb_username, fb_password):
+    _log('++ starting scrape_fb_posts_job')
+    fb_scraper = get_fb_scraper(fb_username=fb_username, fb_password=fb_password)
+    num_users = len(users)
+    for index, user in enumerate(users):
+        try:
+            params['users'] = [user]
+            params['output_path'] = get_user_posts_file(user)
+            params['replace'] = True
+            if params.get('job_name'):
+                del params['job_name']
+            _log('++ scraping fb_posts for user {} [{}/{}]'.format(user, index, num_users))
+            scrape_fb_posts(params, fb_scraper=fb_scraper)
+            # reset num_initializations after a success
+            fb_scraper.num_initializations = 0
+        except Exception as e:
+            fb_scraper.re_initialize_driver()
+            _capture_exception(e)
+            continue
+    # finally, quit
+    fb_scraper.quit_driver()
+
+
+def scrape_fb_posts(params, fb_scraper=None):
     _log('++ starting fb_posts job')
-    scraper = OsfScraper(params)
+    scraper = OsfScraper(params, fb_scraper=fb_scraper)
     try:
         output = scraper.scrape_fb_posts()
         scraper.write_output(output)
@@ -23,7 +47,8 @@ def scrape_fb_posts(params):
         scraper.send_error_message()
         raise e
     finally:
-        scraper.quit_driver()
+        pass
+        # scraper.quit_driver()
 
 
 class OsfScraper:

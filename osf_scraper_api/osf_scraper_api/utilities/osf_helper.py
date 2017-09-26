@@ -13,3 +13,7 @@ def get_fb_scraper(fb_username, fb_password):
         dpr=ENV_DICT.get('DPR', 1)
     )
     return fb_scraper
+
+
+def paginate_list(mylist, page_size):
+    return [mylist[i:i + page_size] for i in range(0, len(mylist), page_size)]
