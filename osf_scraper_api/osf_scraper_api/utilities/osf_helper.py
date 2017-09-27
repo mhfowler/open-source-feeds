@@ -1,3 +1,5 @@
+import datetime
+
 from osf_scraper_api.utilities.log_helper import _log, _log_image
 from osf.scrapers.facebook import FbScraper
 from osf_scraper_api.settings import SELENIUM_URL, ENV_DICT
@@ -17,3 +19,13 @@ def get_fb_scraper(fb_username, fb_password):
 
 def paginate_list(mylist, page_size):
     return [mylist[i:i + page_size] for i in range(0, len(mylist), page_size)]
+
+
+def convert_timestamp_to_date(ts):
+    if not ts:
+        return None
+    try:
+        return datetime.datetime.fromtimestamp(int(ts))
+    except:
+        _log('++ warning: unable to parse timestamp {}'.format(ts))
+        return None
