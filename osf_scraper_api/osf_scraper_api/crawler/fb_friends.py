@@ -3,7 +3,7 @@ from osf_scraper_api.utilities.osf_helper import get_fb_scraper
 from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
 
 
-def scrape_fb_friends(users, fb_username, fb_password, no_skip=False):
+def crawler_scrape_fb_friends(users, fb_username, fb_password, no_skip=False):
     _log('++ starting fb_friends job')
     fb_scraper = get_fb_scraper(fb_username=fb_username, fb_password=fb_password)
     fb_scraper.fb_login()

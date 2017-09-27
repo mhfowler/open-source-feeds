@@ -5,7 +5,7 @@ from osf_scraper_api.crawler.screenshot import screenshot_user_job, screenshot_m
 from osf_scraper_api.crawler.utils import fetch_friends_of_user
 from osf_scraper_api.crawler.utils import get_unprocessed_friends
 from osf_scraper_api.crawler.utils import get_user_posts_file
-from osf_scraper_api.jobs.fb_friends import scrape_fb_friends
+from osf_scraper_api.crawler.fb_friends import crawler_scrape_fb_friends
 from osf_scraper_api.settings import TEMPLATE_DIR
 from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder
 from osf_scraper_api.utilities.log_helper import _log
@@ -21,7 +21,7 @@ def get_crawler_blueprint(osf_queue):
         users = params.get('users')
         if users != 'all_friends':
             _log('++ enqueing fb_friends job')
-            osf_queue.enqueue(scrape_fb_friends,
+            osf_queue.enqueue(crawler_scrape_fb_friends,
                 users=params['users'],
                 fb_username=params['fb_username'],
                 fb_password=params['fb_password'],
@@ -32,7 +32,7 @@ def get_crawler_blueprint(osf_queue):
             friends = fetch_friends_of_user(central_user)
             for friend in friends:
                 _log('++ enqueing fb_friends job for: {}'.format(friend))
-                osf_queue.enqueue(scrape_fb_friends,
+                osf_queue.enqueue(crawler_scrape_fb_friends,
                   users=[friend],
                   fb_username=params['fb_username'],
                   fb_password=params['fb_password'],
