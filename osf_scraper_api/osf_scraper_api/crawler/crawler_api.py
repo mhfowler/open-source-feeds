@@ -1,4 +1,8 @@
-from flask import make_response, jsonify, Blueprint, request
+import requests
+import threading
+import json
+
+from flask import make_response, jsonify, Blueprint, request, abort
 
 from osf_scraper_api.crawler.fb_posts import scrape_fb_posts_job
 from osf_scraper_api.crawler.screenshot import screenshot_user_job, screenshot_multi_user_job
@@ -8,24 +12,69 @@ from osf_scraper_api.crawler.utils import get_user_posts_file
 from osf_scraper_api.crawler.fb_friends import crawler_scrape_fb_friends
 from osf_scraper_api.settings import TEMPLATE_DIR
 from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder
-from osf_scraper_api.utilities.log_helper import _log
-from osf_scraper_api.utilities.osf_helper import paginate_list
+from osf_scraper_api.utilities.log_helper import _log, _capture_exception
+from osf_scraper_api.utilities.osf_helper import paginate_list, get_fb_scraper
+from osf_scraper_api.settings import ENV_DICT
 
 
 def get_crawler_blueprint(osf_queue):
     crawler_blueprint = Blueprint('crawler_blueprint', __name__, template_folder=TEMPLATE_DIR)
 
+    @crawler_blueprint.route('/api/whats_on_your_mind/', methods=['POST'])
+    def whats_on_your_mind_endpoint():
+        params = request.get_json()
+        required_fields = [
+            'fb_username',
+            'fb_password',
+        ]
+        for req_field in required_fields:
+            if req_field not in params.keys():
+                abort(make_response(jsonify({'message': '{} field is required.'.format(req_field)}), 422))
+
+        try:
+            fb_username = params['fb_username']
+            fb_password = params['fb_password']
+            fb_scraper = get_fb_scraper(fb_username=fb_username, fb_password=fb_password)
+            user = fb_scraper.get_currently_logged_in_user()
+            _log('++ successfully looked up currently logged in user: {}'.format(user))
+            job_params = {
+                'users': [user],
+                'post_process': True,
+                'fb_username': fb_username,
+                'fb_password': fb_password
+            }
+            url = '{API_DOMAIN}/api/crawler/fb_friends/'.format(API_DOMAIN=ENV_DICT['API_DOMAIN'])
+            _log('++ making post request to {}'.format(url))
+            def thread_fun():
+                headers = {'content-type': 'application/json'}
+                requests.post(url, data=json.dumps(job_params), headers=headers)
+            t = threading.Thread(target=thread_fun)
+            t.start()
+            return make_response(jsonify({
+                'message': 'Successfully logged in. Thank you, we will share the results.'
+            }), 200)
+        except Exception as e:
+            _capture_exception(e)
+            return make_response(jsonify({
+                'message': 'Failed to log into Facebook. '
+                           'If you log into Facebook in your browser and confirm that the recent login' 
+                           'was you, and then re-run this command it may work the second time.'
+            }), 400)
+
+
     @crawler_blueprint.route('/api/crawler/fb_friends/', methods=['POST'])
     def fb_friends_endpoint():
         params = request.get_json()
         users = params.get('users')
+        post_process = params.get('post_process')
         if users != 'all_friends':
             _log('++ enqueing fb_friends job')
             osf_queue.enqueue(crawler_scrape_fb_friends,
                 users=params['users'],
                 fb_username=params['fb_username'],
                 fb_password=params['fb_password'],
-                no_skip=params.get('no_skip')
+                no_skip=params.get('no_skip'),
+                post_process=post_process
             )
         else:
             central_user = params.get('central_user')
@@ -36,7 +85,8 @@ def get_crawler_blueprint(osf_queue):
                   users=[friend],
                   fb_username=params['fb_username'],
                   fb_password=params['fb_password'],
-                  no_skip=params.get('no_skip')
+                  no_skip=params.get('no_skip'),
+                  post_process=params.get('post_process')
                 )
         return make_response(jsonify({
             'message': 'fb_friend job enqueued'

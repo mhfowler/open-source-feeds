@@ -185,6 +185,19 @@ class FbScraper():
             self.fb_login()
         return save_post(post=post, driver=self.driver, output_path=output_path, dpr=self.dpr, log=self.log)
 
+    def get_currently_logged_in_user(self):
+        if not self.logged_in:
+            self.fb_login()
+        url = '{}/profile'.format(BASE_URL)
+        self.driver.get(url)
+        time.sleep(1)
+        current_url = self.driver.current_url
+        match = re.match('https://www.facebook.com/(.*)', current_url)
+        user = match.group(1)
+        if user.endswith('/'):
+            user = user[:-1]
+        return user
+
     def get_friends(self, users):
         """
         for each user, in list of users, get all of their friends
