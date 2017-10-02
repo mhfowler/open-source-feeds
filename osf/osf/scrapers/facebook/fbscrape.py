@@ -115,6 +115,7 @@ class FbScraper():
                  driver=None,
                  log=None,
                  log_image=None,
+                 proxy=None,
                  dpr=1):
         self.fb_username = fb_username
         self.fb_password = fb_password
@@ -126,12 +127,15 @@ class FbScraper():
         self.driver_has_quit = False
         self.num_initializations = 0
         self.command_executor = command_executor
+        self.proxy = proxy
         self.initialize_driver(driver=driver)
 
     def initialize_driver(self, driver=None):
         if self.command_executor:
             chrome_options = Options()
             chrome_options.add_argument("--disable-notifications")
+            if self.proxy:
+                chrome_options.add_argument('--proxy-server=%s' % self.proxy)
             self.driver = webdriver.Remote(
                 command_executor=self.command_executor,
                 desired_capabilities=chrome_options.to_capabilities()
@@ -141,6 +145,8 @@ class FbScraper():
             if not driver:
                 chrome_options = Options()
                 chrome_options.add_argument("--disable-notifications")
+                if self.proxy:
+                    chrome_options.add_argument('--proxy-server=%s' % self.proxy)
                 self.driver = webdriver.Chrome(chrome_options=chrome_options)
             # otherwise use the driver passed in
             else:
@@ -365,13 +371,13 @@ class FbScraper():
 
             # grab the posts
             # found_posts = self.driver.find_elements_by_css_selector('a._5pcq')
-            found_sel_posts = self.driver.find_elements_by_css_selector('div.fbUserContent, div.fbUserContent')
+            found_sel_posts = self.driver.find_elements_by_css_selector('div.fbUserContent, div.fbUserContent, div.fbUserStory')
             found_posts = [Post(x) for x in found_sel_posts]
             # filter out malformed posts
-            found_posts = filter(lambda p: p.is_valid(), found_posts)
+            valid_posts = filter(lambda p: p.is_valid(), found_posts)
 
             # only consider new posts
-            new_posts = filter(lambda p: p.get_link() not in posts, found_posts)
+            new_posts = filter(lambda p: p.get_link() not in posts, valid_posts)
 
             # if no new posts, increment counter
             if not new_posts:

@@ -7,7 +7,11 @@
         - '443:443'
       links:
         - selenium
+      environment:
+        - OSF_QUEUE=osf{{ play_hosts.index(inventory_hostname) }}
     selenium:
       image: selenium/standalone-chrome
       ports:
         - "4444:4444"
+      volumes:
+        - "/dev/shm:/dev/shm"

@@ -5,6 +5,10 @@
 - name: ensure srv directory
   action: file dest=/srv state=directory
 
+- name: set permissions on /srv directory
+  action: file path=/srv mode=u=rwX,g=rwX,o=X recurse=yes owner=ubuntu
+  become_user: root
+
 - name: Ensure docker-compose file is up to date
   action: template src=/Users/maxfowler/computer/projects/opensourcefeeds/osf_scraper_api/prod-docker-compose.yml dest=/srv/docker-compose.yml
 

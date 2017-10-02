@@ -2,16 +2,19 @@ import json
 import time
 import os
 import datetime
+import requests
 
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception, _log_image
 from osf_scraper_api.utilities.osf_helper import get_fb_scraper
 from osf_scraper_api.utilities.email_helper import send_email
-from osf_scraper_api.settings import SELENIUM_URL, DATA_DIR
+from osf_scraper_api.settings import SELENIUM_URL, DATA_DIR, ENV_DICT
 from osf_scraper_api.utilities.fs_helper import save_dict
 from osf_scraper_api.crawler.utils import get_user_posts_file
+from osf_scraper_api.utilities.selenium_helper import restart_selenium
+from osf_scraper_api.utilities.rq_helper import get_rq_jobs_for_user
 
 
-def scrape_fb_posts_job(users, params, fb_username, fb_password):
+def scrape_fb_posts_job(users, params, fb_username, fb_password, post_process=False, central_user=None):
     _log('++ starting scrape_fb_posts_job')
     fb_scraper = get_fb_scraper(fb_username=fb_username, fb_password=fb_password)
     num_users = len(users)
@@ -24,31 +27,66 @@ def scrape_fb_posts_job(users, params, fb_username, fb_password):
                 del params['job_name']
             _log('++ scraping fb_posts for user {} [{}/{}]'.format(user, index, num_users))
             scrape_fb_posts(params, fb_scraper=fb_scraper)
-            # reset num_initializations after a success
             fb_scraper.num_initializations = 0
         except Exception as e:
-            fb_scraper.re_initialize_driver()
             _capture_exception(e)
             continue
     # finally, quit
+    _log('++ request complete')
     fb_scraper.quit_driver()
 
+    if post_process:
+        fb_posts_post_process(central_user=central_user, fb_username=fb_username, fb_password=fb_password)
 
-def scrape_fb_posts(params, fb_scraper=None):
-    _log('++ starting fb_posts job')
+
+def fb_posts_post_process(central_user, fb_username, fb_password):
+    _log('++ running post process check for pending jobs of user {}'.format(central_user))
+    # check if there are any other pending scrape_posts jobs for this user
+    rq_jobs = get_rq_jobs_for_user(fb_username=fb_username)
+    def filter_fun(job):
+        if job.func_name == 'osf_scraper_api.crawler.fb_posts.scrape_fb_posts_job':
+            if job.kwargs.get('fb_username') == fb_username:
+                return True
+        # otherwise return False
+        return False
+    pending = filter(filter_fun, rq_jobs)
+    # if no pending job found, then make request to start screenshots jobs
+    if len(pending) == 0:
+        _log('++ starting post_process job to screenshot posts for user: {}'.format(fb_username))
+        job_params = {
+            'fb_username': fb_username,
+            'fb_password': fb_password,
+            "central_user": central_user,
+            "no_skip": False,
+            "post_process": True,
+            "input_folder": 'jobs/whats_on_your_mind'
+        }
+        url = '{API_DOMAIN}/api/crawler/fb_screenshots/'.format(API_DOMAIN=ENV_DICT['API_DOMAIN'])
+        headers = {'content-type': 'application/json'}
+        requests.post(url, data=json.dumps(job_params), headers=headers)
+        _log('++ curled job to scrape screenshots of {}'.format(central_user))
+    else:
+        _log('++ found {} pending jobs, waiting for other jobs to finish'.format(len(pending)))
+
+
+def scrape_fb_posts(params, fb_scraper=None, num_attempts=0):
     scraper = OsfScraper(params, fb_scraper=fb_scraper)
     try:
         output = scraper.scrape_fb_posts()
         scraper.write_output(output)
-        _log('++ request complete')
+        # if successful then set num to 0
+        fb_scraper.num_initializations = 0
     except Exception as e:
-        _log('++ encountered an error')
-        _capture_exception(e)
-        scraper.send_error_message()
-        raise e
-    finally:
-        pass
-        # scraper.quit_driver()
+        _log('++ encountered error {}'.format(str(e)))
+        if num_attempts == 0:
+            restart_selenium()
+            fb_scraper.re_initialize_driver()
+            num_attempts += 1
+            return scrape_fb_posts(params=params, fb_scraper=fb_scraper, num_attempts=num_attempts)
+        else:
+            restart_selenium()
+            fb_scraper.re_initialize_driver()
+            raise e
 
 
 class OsfScraper:

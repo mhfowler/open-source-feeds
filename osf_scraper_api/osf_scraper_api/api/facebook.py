@@ -1,13 +1,13 @@
 from flask import make_response, jsonify, Blueprint, request, abort
 
-from osf_scraper_api.jobs.test_rq import test_rq
 from osf_scraper_api.utilities.osf_helper import paginate_list
 from osf_scraper_api.settings import TEMPLATE_DIR
 from osf_scraper_api.utilities.log_helper import _log
+from osf_scraper_api.utilities.rq_helper import enqueue_job
 from osf_scraper_api.jobs.run_job import run_job
 
 
-def get_facebook_blueprint(osf_queue):
+def get_facebook_blueprint(queue_map):
     facebook_blueprint = Blueprint('facebook_blueprint', __name__, template_folder=TEMPLATE_DIR)
 
     @facebook_blueprint.route('/api/fb_friends/', methods=['POST'])
@@ -56,7 +56,8 @@ def get_facebook_blueprint(osf_queue):
                 job_params[param] = params[param]
 
             # enqueu the job
-            osf_queue.enqueue(run_job,
+            enqueue_job(run_job,
+                fb_username=job_params['fb_username'],
                 job_type='scrape_fb_friends',
                 job_params=job_params,
                 output_bin=output_bin,
@@ -118,8 +119,9 @@ def get_facebook_blueprint(osf_queue):
                 job_params[param] = params.get(param)
 
             # enqueu the job
-            osf_queue.enqueue(run_job,
+            enqueue_job(run_job,
                 job_type='scrape_fb_posts',
+                fb_username=job_params['fb_username'],
                 job_params=job_params,
                 output_bin=output_bin,
                 timeout=5000
@@ -128,13 +130,6 @@ def get_facebook_blueprint(osf_queue):
         # return 200
         return make_response(jsonify({
             'message': 'fb_friends jobs enqueued'
-        }), 200)
-
-    @facebook_blueprint.route('/api/test_rq/<test_id>/', methods=['GET'])
-    def test_rq_endpoint(test_id):
-        osf_queue.enqueue(test_rq, test_id)
-        return make_response(jsonify({
-            'message': 'Job enqueued for scraping.'
         }), 200)
 
     return facebook_blueprint
