@@ -11,12 +11,21 @@ def get_s3_base_url():
     return 'https://s3.amazonaws.com/{}'.format(ENV_DICT['S3_BUCKET_NAME'])
 
 
-def get_s3_bucket():
+def get_s3_link(s3_path):
+    return '{}/{}'.format(get_s3_base_url(), s3_path)
+
+
+def get_s3_session():
     session = boto3.Session(
         aws_access_key_id=ENV_DICT['AWS_ACCESS_KEY'],
         aws_secret_access_key=ENV_DICT['AWS_SECRET_KEY'],
     )
     s3 = session.resource('s3')
+    return s3
+
+
+def get_s3_bucket():
+    s3 = get_s3_session()
     bucket = s3.Bucket(ENV_DICT['S3_BUCKET_NAME'])
     return bucket
 
@@ -65,6 +74,16 @@ def s3_list_files_in_folder(s3_path):
     keys = bucket.list(prefix=s3_path)
     keys = [k.name for k in keys]
     return keys
+
+
+def s3_download_file(s3_path, local_path):
+    s3 = get_s3_session()
+    s3.meta.client.download_file(ENV_DICT['S3_BUCKET_NAME'], s3_path, local_path)
+
+
+def s3_delete_file(s3_path):
+    s3 = get_s3_session()
+    s3.meta.client.delete_object(Bucket=ENV_DICT['S3_BUCKET_NAME'], Key=s3_path)
 
 
 if __name__ == '__main__':

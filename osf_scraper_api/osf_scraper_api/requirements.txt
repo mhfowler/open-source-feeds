@@ -13,3 +13,4 @@ boto3==1.4.7
 selenium==3.5.0
 Pillow==4.2.1
 boto==2.48.0
+fpdf==1.7.2

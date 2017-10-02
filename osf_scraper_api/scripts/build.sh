@@ -8,5 +8,8 @@ nunjucks *.njk -p $BASEDIR/devops/templates \
     -e "$BASEDIR/devops/config/${BUILD_ENV}.json"
 echo "++ building docker image"
 
-docker-compose build $DOCKER_NO_CACHE osf_scraper_api
+if [ -n "$DOCKER_NO_CACHE" ];
+    then DOCKER_ARGS=--no-cache;
+fi
+docker-compose build $DOCKER_ARGS osf_scraper_api
 osascript -e 'display notification "finished" with title "Notification"'

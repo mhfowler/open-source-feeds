@@ -2,12 +2,13 @@
 Adapted from https://gist.github.com/spjwebster/6521272
 """
 import sys
+import os
 
 from redis import StrictRedis
 from rq import Worker, Queue, Connection
 
 from osf_scraper_api.settings import ENV_DICT
-from osf_scraper_api.utilities.log_helper import _capture_rq_exception
+from osf_scraper_api.utilities.log_helper import _capture_rq_exception, _log
 
 redis_connection = StrictRedis(
     host=ENV_DICT.get('REDIS_HOST'),
@@ -35,7 +36,9 @@ def retry_handler(job, exc_type, exc_value, traceback):
 
 if __name__ == '__main__':
     with Connection(redis_connection):
-        queues = map(Queue, sys.argv[1:]) or [Queue()]
+        queue_names = sys.argv[1:]
+        queues = map(Queue, queue_names) or [Queue()]
+        _log('++ listening to queues: {}'.format(queue_names))
         worker = Worker(queues)
         worker.push_exc_handler(retry_handler)
         from osf_scraper_api.web.app import create_app

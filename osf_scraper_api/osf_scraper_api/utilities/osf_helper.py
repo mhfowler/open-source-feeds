@@ -12,7 +12,8 @@ def get_fb_scraper(fb_username, fb_password):
         command_executor=SELENIUM_URL,
         log=_log,
         log_image=_log_image,
-        dpr=ENV_DICT.get('DPR', 1)
+        dpr=ENV_DICT.get('DPR', 1),
+        proxy=ENV_DICT.get('PROXY')
     )
     return fb_scraper
 

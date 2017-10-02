@@ -6,7 +6,7 @@ from osf_scraper_api.jobs.scrape_fb_posts import scrape_fb_posts
 from osf_scraper_api.jobs.scrape_fb_friends import scrape_fb_friends
 
 
-def run_job(job_type, job_params, output_bin):
+def run_job(job_type, job_params, fb_username, output_bin):
 
     # log that job is starting
     _log('++ starting {} job'.format(job_type))

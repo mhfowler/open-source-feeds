@@ -1,6 +1,6 @@
 - hosts: staging-servers
   become: yes
-  become_user: root
+  become_user: ubuntu
   environment:
     BUILD_ENV: staging
 

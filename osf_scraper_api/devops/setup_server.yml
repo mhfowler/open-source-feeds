@@ -36,3 +36,6 @@
 
     - name: install docker-comopse
       command: pip install docker-compose==1.14.0
+
+    - name: add ubuntu to docker gorup
+      user: name=ubuntu groups=docker append=yes
