@@ -299,7 +299,7 @@ class FbScraper():
 
         # navigate to the url of the friend
         url = '{}/{}'.format(BASE_URL, user)
-        self.log('++ navigating to url {}'.format(url))
+        self.log('++ navigating to url `{}`'.format(url))
         self.driver.get(url)
         time.sleep(4)
 

@@ -15,6 +15,10 @@ def _log(message, channel_name=None):
     -- note that a suffix may be appended to this channel name automatically SLACK_CHANNEL_SUFFIX is in env.json
     :return: None
     """
+    if message.startswith('++'):
+        if ENV_DICT.get('HOST_IP_ADDRESS'):
+            message = message[2:]   # remove prefix
+            message = '++ [{}]'.format(ENV_DICT.get('HOST_IP_ADDRESS')) + message
     print message
 
     # if slack logging is turned on

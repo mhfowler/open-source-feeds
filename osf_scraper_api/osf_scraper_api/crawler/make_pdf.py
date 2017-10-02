@@ -104,9 +104,12 @@ def make_pdf_job(fb_username, fb_password):
     # now create pdf
     pdf = FPDF()
     for index, post in enumerate(final_posts):
-        local_path = post['local_path']
-        pdf.add_page()
-        pdf.image(name=local_path)
+        try:
+            local_path = post['local_path']
+            pdf.add_page()
+            pdf.image(name=local_path)
+        except Exception as e:
+            _capture_exception(e)
         if not index % 10:
             _log('++ combining {}/{}'.format(index, num_final_posts))
     pdf_path = os.path.join(temp_path, 'output.pdf')

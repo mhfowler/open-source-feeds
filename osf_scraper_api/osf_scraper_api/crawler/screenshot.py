@@ -7,6 +7,8 @@ import json
 import requests
 import random
 
+from rq import get_current_job
+
 from osf_scraper_api.utilities.fs_helper import load_dict
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.utilities.osf_helper import get_fb_scraper, paginate_list
@@ -153,10 +155,12 @@ def screenshot_posts(posts, fb_username, fb_password, post_process=False):
         _log('++ running post process check for pending jobs of user {}'.format(fb_username))
         # check if there are any other pending scrape_posts jobs for this user
         rq_jobs = get_rq_jobs_for_user(fb_username=fb_username)
+        current_job = get_current_job()
         def filter_fun(job):
             if job.func_name == 'osf_scraper_api.crawler.screenshot.screenshot_posts':
                 if job.kwargs.get('fb_username') == fb_username:
-                    return True
+                    if not current_job or current_job.id != job.id:
+                        return True
             # otherwise return False
             return False
         pending = filter(filter_fun, rq_jobs)

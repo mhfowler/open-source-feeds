@@ -8,7 +8,8 @@
       links:
         - selenium
       environment:
-        - OSF_QUEUE=osf{{ play_hosts.index(inventory_hostname) }}
+        - OSF_QUEUE={{osf_queue}}
+        - HOST_IP_ADDRESS={{inventory_hostname}}
     selenium:
       image: selenium/standalone-chrome
       ports:

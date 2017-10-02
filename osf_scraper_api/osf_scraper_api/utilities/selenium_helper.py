@@ -7,13 +7,16 @@ from osf_scraper_api.settings import ENV_DICT
 
 
 def restart_selenium():
-    ssh_cmd = ENV_DICT.get("HOST_SSH_COMMAND")
-    if not ssh_cmd:
+    host_ip_address = ENV_DICT.get("HOST_IP_ADDRESS")
+    if not host_ip_address:
         _log('++ HOST_SSH_COMMAND not set, not restarting selenium')
         return
     else:
-        _log('++ restarting selenium')
+        _log('++ restarting selenium on host {}'.format(host_ip_address))
         try:
+            ssh_cmd = 'ssh -o StrictHostKeyChecking=no ubuntu@{host_ip_address} -i /secret/osf.pem'.format(
+                host_ip_address=host_ip_address
+            )
             cmd = '{ssh_cmd} "BUILD_ENV=staging /usr/local/bin/docker-compose -f /srv/docker-compose.yml restart selenium"'.format(
                 ssh_cmd=ssh_cmd
             )

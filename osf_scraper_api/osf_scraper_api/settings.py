@@ -34,6 +34,10 @@ print 'ENV_PATH: {}'.format(ENV_PATH)
 # load env.json into ENV_DICT
 ENV_DICT = json.loads(open(ENV_PATH, "r").read())
 
+# load env variables from host
+if os.environ.get('HOST_IP_ADDRESS'):
+    ENV_DICT['HOST_IP_ADDRESS'] = os.environ.get('HOST_IP_ADDRESS')
+
 # paths
 FLASK_DIR = os.path.join(PROJECT_PATH, 'hello_webapp')
 TEMPLATE_DIR = os.path.join(PROJECT_PATH, 'templates')
@@ -46,8 +50,3 @@ SELENIUM_URL = ENV_DICT.get('SELENIUM_URL')
 print 'SELENIUM_URL: {}'.format(SELENIUM_URL)
 
 DEFAULT_JOB_TIMEOUT = 300
-
-QUEUE_NAMES = [
-    'osf0',
-    'osf1'
-]

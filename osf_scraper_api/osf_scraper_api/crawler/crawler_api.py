@@ -187,7 +187,7 @@ def get_crawler_blueprint(osf_queue):
         params = request.get_json()
         fb_username = params['fb_username']
         fb_password = params['fb_password']
-        enqueue_job(make_pdf_job, fb_username=fb_username, fb_password=fb_password, timeout=1800)
+        enqueue_job(make_pdf_job, fb_username=fb_username, fb_password=fb_password, timeout=3600)
         return make_response(jsonify({
             'message': 'pdf job enqueued'
         }), 200)

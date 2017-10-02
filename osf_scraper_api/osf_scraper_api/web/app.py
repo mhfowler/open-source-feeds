@@ -6,7 +6,7 @@ from osf_scraper_api.api.utils import get_utils_blueprint
 from osf_scraper_api.api.helper import get_helpers_blueprint
 from osf_scraper_api.crawler.crawler_api import get_crawler_blueprint
 from osf_scraper_api.utilities.rq_helper import get_queue_map
-from osf_scraper_api.settings import PROJECT_PATH, TEMPLATE_DIR, ENV_DICT, DEFAULT_JOB_TIMEOUT, QUEUE_NAMES
+from osf_scraper_api.settings import PROJECT_PATH, TEMPLATE_DIR, ENV_DICT, DEFAULT_JOB_TIMEOUT
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.web.extensions import sentry, mail
 
