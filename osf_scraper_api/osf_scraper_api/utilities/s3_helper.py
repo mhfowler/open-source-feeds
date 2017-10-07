@@ -1,5 +1,6 @@
 import os
 import tempfile
+import subprocess
 
 import boto3
 from boto.s3.connection import S3Connection
@@ -31,10 +32,27 @@ def get_s3_bucket():
 
 
 def s3_upload_file(source_file_path, destination):
-    with open(source_file_path, 'r') as f:
-        bucket = get_s3_bucket()
-        bucket.put_object(Key=destination, Body=f)
-    return '{}/{}'.format(get_s3_base_url(), destination)
+    cmd = 'AWS_ACCESS_KEY_ID={AWS_ACCESS_KEY} AWS_SECRET_ACCESS_KEY={AWS_SECRET_ACCESS_KEY} ' \
+            'aws s3 cp "{local_path}" "s3://{bucket_name}/{output_path}"'.format(
+        AWS_ACCESS_KEY=ENV_DICT['AWS_ACCESS_KEY'],
+        AWS_SECRET_ACCESS_KEY=ENV_DICT['AWS_SECRET_KEY'],
+        local_path=source_file_path,
+        output_path=destination,
+        bucket_name=ENV_DICT['S3_BUCKET_NAME']
+    )
+    os.system(cmd)
+
+
+def s3_download_file(s3_path, local_path):
+    cmd = 'AWS_ACCESS_KEY_ID={AWS_ACCESS_KEY} AWS_SECRET_ACCESS_KEY={AWS_SECRET_ACCESS_KEY} ' \
+          'aws s3 cp "s3://{bucket_name}/{s3_path}" "{local_path}"'.format(
+        AWS_ACCESS_KEY=ENV_DICT['AWS_ACCESS_KEY'],
+        AWS_SECRET_ACCESS_KEY=ENV_DICT['AWS_SECRET_KEY'],
+        s3_path=s3_path,
+        local_path=local_path,
+        bucket_name=ENV_DICT['S3_BUCKET_NAME']
+    )
+    os.system(cmd)
 
 
 def s3_get_file_as_string(s3_path):
@@ -53,11 +71,20 @@ def s3_key_exists(s3_path):
     :param s3_path: string of key to test existence of
     :return: boolean
     """
-    bucket = get_s3_bucket()
-    objs = list(bucket.objects.filter(Prefix=s3_path))
-    if len(objs) > 0 and objs[0].key == s3_path:
-        return True
-    else:
+    try:
+        cmd = 'AWS_ACCESS_KEY_ID={AWS_ACCESS_KEY} AWS_SECRET_ACCESS_KEY={AWS_SECRET_ACCESS_KEY} ' \
+              'aws s3 ls "s3://{bucket_name}/{s3_path}"'.format(
+            AWS_ACCESS_KEY=ENV_DICT['AWS_ACCESS_KEY'],
+            AWS_SECRET_ACCESS_KEY=ENV_DICT['AWS_SECRET_KEY'],
+            s3_path=s3_path,
+            bucket_name=ENV_DICT['S3_BUCKET_NAME']
+        )
+        output = subprocess.check_output(cmd, shell=True)
+        if output:
+            return True
+        else:
+            return False
+    except:
         return False
 
 
@@ -76,11 +103,6 @@ def s3_list_files_in_folder(s3_path):
     return keys
 
 
-def s3_download_file(s3_path, local_path):
-    s3 = get_s3_session()
-    s3.meta.client.download_file(ENV_DICT['S3_BUCKET_NAME'], s3_path, local_path)
-
-
 def s3_delete_file(s3_path):
     s3 = get_s3_session()
     s3.meta.client.delete_object(Bucket=ENV_DICT['S3_BUCKET_NAME'], Key=s3_path)
@@ -89,5 +111,7 @@ def s3_delete_file(s3_path):
 if __name__ == '__main__':
 
     # Upload a new file
-    f_path = os.path.join(PROJECT_PATH, 'data/maxhfowler@gmail.com-1504899764.json')
-    s3_upload_file(source_file_path=f_path, destination='test.json')
+    # f_path = os.path.join(PROJECT_PATH, '/Users/maxfowler/Desktop/test.txt')
+    # s3_upload_file(source_file_path=f_path, destination='test.json')
+    test = s3_key_exists('test.json')
+    print test

@@ -21,6 +21,9 @@ RUN apt-get install -y \
     git \
     curl
 
+# Install aws-cli
+RUN pip install awscli --upgrade
+
 # create user groups
 RUN groupadd webgroup
 RUN usermod -G webgroup root

@@ -19,7 +19,7 @@
   command: /usr/local/bin/docker-compose -f /srv/docker-compose.yml pull
 
 - name: delete dangling docker instances
-  command: "/usr/bin/docker rmi $(/usr/bin/docker images -f dangling=true -q)"
+  command: docker rmi $(docker images -f dangling=true -q)
   ignore_errors: True
 
 - name: Run docker-compose up

@@ -176,5 +176,16 @@ def screenshot_posts(posts, fb_username, fb_password, post_process=False):
             requests.post(url, data=json.dumps(job_params), headers=headers)
             _log('++ curled job to scrape screenshots of {}'.format(fb_username))
         else:
-            _log('++ found {} pending jobs, waiting for other jobs to finish'.format(len(pending)))
+            job_logs = []
+            for job in rq_jobs:
+                j = {
+                    'id': job.id,
+                    'started_at': str(job.started_at)
+                }
+                job_logs.append(j)
+            _log('++ found {} pending jobs, waiting for other jobs to finish {} | current_job: {}'.format(
+                len(pending),
+                json.dumps(job_logs),
+                current_job.job_id if current_job else None
+            ))
 

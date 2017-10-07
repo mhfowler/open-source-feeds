@@ -13,7 +13,7 @@ def enqueue_job(*args, **kwargs):
     fb_username = kwargs['fb_username']
     job_fun = args[0]
     queue = get_queue_for_user(fb_username)
-    queue.enqueue(job_fun, **kwargs)
+    return queue.enqueue(job_fun, **kwargs)
 
 
 def get_redis_connection():

@@ -7,14 +7,16 @@ from osf_scraper_api.utilities.s3_helper import s3_upload_file, s3_get_file_as_s
 
 
 def save_dict(data_dict, destination):
-    f = tempfile.NamedTemporaryFile(delete=False)
-    # write contents to file
-    contents = json.dumps(data_dict)
-    f.write(contents)
-    f.close()
-    # save file
-    save_file(source_file_path=f.name, destination=destination)
-    os.unlink(f.name)
+    _, f_path = tempfile.mkstemp()
+    try:
+        # write contents to file
+        contents = json.dumps(data_dict)
+        with open(f_path, 'w') as f:
+            f.write(contents)
+        # save file
+        save_file(source_file_path=f_path, destination=destination)
+    finally:
+        os.unlink(f_path)
 
 
 def load_dict(path):

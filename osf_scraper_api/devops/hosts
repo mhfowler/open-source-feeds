@@ -1,3 +1,4 @@
 [staging-servers]
-54.226.160.22 ansible_ssh_user=ubuntu ansible_ssh_private_key_file=secret_files/osf.pem osf_queue=osf0
-54.242.26.10 ansible_ssh_user=ubuntu ansible_ssh_private_key_file=secret_files/osf.pem osf_queue=osf1
+54.226.160.22 osf_queue=osf0 ansible_ssh_user=ubuntu ansible_ssh_private_key_file=secret_files/osf.pem
+34.203.191.36 osf_queue=osf0 ansible_ssh_user=ubuntu ansible_ssh_private_key_file=secret_files/osf.pem ansible_python_interpreter=/usr/bin/python3
+52.91.103.175 osf_queue=osf1 ansible_ssh_user=ubuntu ansible_ssh_private_key_file=secret_files/osf.pem ansible_python_interpreter=/usr/bin/python3

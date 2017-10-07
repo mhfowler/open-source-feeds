@@ -10,13 +10,14 @@ from osf_scraper_api.crawler.screenshot import screenshot_user_job, screenshot_m
 from osf_scraper_api.crawler.utils import fetch_friends_of_user
 from osf_scraper_api.crawler.utils import get_unprocessed_friends
 from osf_scraper_api.crawler.utils import get_user_posts_file
-from osf_scraper_api.crawler.make_pdf import make_pdf_job
+from osf_scraper_api.crawler.make_pdf import make_pdf_job, aggregate_posts_job
 from osf_scraper_api.crawler.whats_on_your_mind import whats_on_your_mind_job
 from osf_scraper_api.crawler.fb_friends import crawler_scrape_fb_friends
 from osf_scraper_api.settings import TEMPLATE_DIR
 from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.utilities.osf_helper import paginate_list, get_fb_scraper
+from osf_scraper_api.crawler.test_job import test_job
 from osf_scraper_api.utilities.rq_helper import enqueue_job
 from osf_scraper_api.settings import ENV_DICT
 
@@ -187,7 +188,16 @@ def get_crawler_blueprint(osf_queue):
         params = request.get_json()
         fb_username = params['fb_username']
         fb_password = params['fb_password']
-        enqueue_job(make_pdf_job, fb_username=fb_username, fb_password=fb_password, timeout=3600)
+        if not params.get('no_aggregate'):
+            _log('++ enqueing aggregate_posts_job')
+            job = enqueue_job(aggregate_posts_job, fb_username=fb_username, fb_password=fb_password, timeout=3600)
+            _log('++ enqueing make_pdf_job')
+            enqueue_job(make_pdf_job, depends_on=job, fb_username=fb_username, timeout=259200)
+        else:
+            _log('++ skipping aggregate posts job')
+            _log('++ enqueing make_pdf_job')
+            enqueue_job(make_pdf_job, fb_username=fb_username, timeout=259200)
+
         return make_response(jsonify({
             'message': 'pdf job enqueued'
         }), 200)
@@ -201,6 +211,13 @@ def get_crawler_blueprint(osf_queue):
         time.sleep(2)
         return make_response(jsonify({
                 'message': 'ip address found'
+        }), 200)
+
+    @crawler_blueprint.route('/api/test_job/', methods=['GET'])
+    def test_job_endpoint():
+        enqueue_job(test_job, fb_username='happyrainbows93@yahoo.com')
+        return make_response(jsonify({
+            'message': 'ok'
         }), 200)
 
     return crawler_blueprint

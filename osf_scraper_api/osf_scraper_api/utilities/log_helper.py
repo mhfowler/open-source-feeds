@@ -59,3 +59,7 @@ def _capture_rq_exception(exc_type, exc_value, exc_traceback):
     _log(formatted_lines, channel_name='_error')
     if ENV_DICT.get('SENTRY_DSN'):
         sentry.captureException()
+
+
+if __name__ == '__main__':
+    _log('test')
