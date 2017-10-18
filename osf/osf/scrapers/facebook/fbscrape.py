@@ -65,12 +65,47 @@ class Post:
                     author = author_href
                 content['author'] = author
 
+        # try to get post_type
+        post_type_divs = self.element.find_elements_by_css_selector('._5x46 .fcg')
+        if post_type_divs:
+            for div in post_type_divs:
+                caption = div.text
+                match = re.match('.*added \d+ new photos.*', caption)
+                if match:
+                    content['post_type'] = 'added photos'
+                    break
+                match = re.match('.*added a new photo.*', caption)
+                if match:
+                    content['post_type'] = 'added photos'
+                    break
+                match = re.match('.* shared .*', caption)
+                if match:
+                    content['post_type'] = 'shared'
+                    break
+                check_in_icon = div.find_elements_by_css_selector('._51mq')
+                if check_in_icon:
+                    content['post_type'] = 'check in'
+                    break
+
         # try to get text of post
         user_text_div = self.element.find_elements_by_css_selector('.userContent')
         if user_text_div:
             user_text_div = user_text_div[0]
             user_text = user_text_div.text
             content['text'] = user_text
+
+        # look for non-text-div
+        non_text_div = self.element.find_elements_by_css_selector('._3x-2')
+        if non_text_div:
+            non_text_div = non_text_div[0]
+            children = non_text_div.find_elements_by_css_selector('*')
+            if len(children) > 1:
+                content['not_just_text'] = True
+
+        # look for see-more-link
+        see_more_links = self.element.find_elements_by_css_selector('a.see_more_link')
+        if see_more_links:
+            content['see_more'] = True
 
         # try to find article
         article_div = self.element.find_elements_by_css_selector('._52c6')
@@ -90,14 +125,24 @@ class Post:
                 content['images'] = image_links
 
         # try to get events
-        event_divs = self.element.find_elements_by_css_selector('._fwx')
+        event_divs = self.element.find_elements_by_css_selector('._fw-')
         if event_divs:
             event_div = event_divs[0]
-            event_a = event_div.find_elements_by_css_selector('a')
-            if event_a:
-                event_a = event_a[0]
-                event_link = event_a.get_attribute('href')
-                content['event'] = event_link
+            event = {}
+            event_title_div = event_div.find_elements_by_css_selector('._fwx')
+            if event_title_div:
+                event_title_div = event_title_div[0]
+                event['event_title'] = event_title_div.text
+                event_a = event_title_div.find_elements_by_css_selector('a')
+                if event_a:
+                    event_a = event_a[0]
+                    event_link = event_a.get_attribute('href')
+                    event['event_link'] = event_link
+            event_info_div = event_div.find_elements_by_css_selector('._fwy')
+            if event_info_div:
+                event_info_div = event_info_div[0]
+                event['event_info'] = event_info_div.text
+            content['event'] = event
 
         # return any content we found
         return content
@@ -306,7 +351,7 @@ class FbScraper():
         # jump_to, optional arg to use facebook sticky header to jump to time period
         if jump_to:
             try:
-                for i in range(0, 3):
+                for i in range(0, 1):
                     self.log('++ scrolling')
                     self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                     time.sleep(1)
@@ -356,6 +401,7 @@ class FbScraper():
         num_searches = 0
         max_num_searches = 200
         stop_search_reason = None
+        already_clicked_elts = set([])
         # keep looping until we reach a finished condition
         # (no new posts, > than oldest date, or > max_num_searches)
         while not finished and (num_searches < max_num_searches):
@@ -365,7 +411,26 @@ class FbScraper():
 
             # scroll down the page a few times
             for i in range(0, 4):
+                # scroll
                 self.log('++ scrolling')
+                # # scroll in small chunks
+                # TODO: figure out how to click continue reading links
+                # scroll_destination = self.driver.execute_script("return document.body.scrollHeight")
+                # for s in range(0, 4):
+                #     # try to click "continue reading" links before scrolling further
+                #     see_more_links = self.driver.find_elements_by_css_selector('a.see_more_link')
+                #     for elt in see_more_links:
+                #         if elt not in already_clicked_elts:
+                #             already_clicked_elts.add(elt)
+                #             is_visible = elt.is_displayed()
+                #             if is_visible:
+                #                 try:
+                #                     elt.click()
+                #                     time.sleep(1)
+                #                 except Exception as e:
+                #                     continue
+                #     s_height = int(scroll_destination) - ((4-s)*100)
+                #     self.driver.execute_script("window.scrollTo(0, {}{});".format(s_height))
                 self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 time.sleep(1)
 
@@ -477,8 +542,8 @@ class FbScraper():
 
         # fetch posts for each given user
         users = params['users']
-        posts = {}
-        self.output['posts'] = posts
+        posts = []
+        self.output = posts
         for user in users:
             self.log('++ getting posts for user: {}'.format(user))
             user_posts = self.get_posts_by_user(user,
@@ -487,8 +552,8 @@ class FbScraper():
                                                 jump_to=params.get('jump_to'),
                                                 max_num_posts_per_user=params.get('max_num_posts_per_user')
                                                 )
-            # store the posts in a dictionary which will be written to output later
-            posts[user] = user_posts
+            # add the posts to the list
+            posts.extend(user_posts)
 
         # return output
         return self.output
@@ -510,9 +575,7 @@ if __name__ == '__main__':
     import json
     output = fbscraper.get_posts({
         'users': ['maxhfowler'],
-        # 'after_date': datetime.date(year=2016, month=11, day=12),
-        # 'before_date': datetime.date(year=2016, month=11, day=12),
-        'jump_to': datetime.datetime(year=2016, month=9, day=1),
+        # 'jump_to': datetime.datetime(year=2016, month=9, day=1),
         'max_num_posts_per_user': 15,
     })
     print json.dumps(output)

@@ -11,5 +11,5 @@ echo "++ building docker image"
 if [ -n "$DOCKER_NO_CACHE" ];
     then DOCKER_ARGS=--no-cache;
 fi
-docker-compose build $DOCKER_ARGS osf_scraper_api
+docker-compose -f $BASEDIR/docker-compose.${BUILD_ENV}.yml build $DOCKER_ARGS osf_scraper_api
 osascript -e 'display notification "finished" with title "Notification"'

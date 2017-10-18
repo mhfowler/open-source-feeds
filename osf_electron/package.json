@@ -1,0 +1,27 @@
+{
+  "name": "facebook-scraper",
+  "productName": "Facebook Scraper",
+  "description": "Simple Electron app providing a GUI for a command-line utility.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-packager ./ --platform=darwin,win32 --arch=x64 --prune --overwrite"
+  },
+  "author": "Max Fowler",
+  "dependencies": {
+    "animation-strip-generator": "https://github.com/karriereat/animation-strip-generator.git#master",
+    "electron": "^1.7.9",
+    "fs-extra": "^4.0.2",
+    "jquery": "^3.2.1"
+  },
+  "files": [
+    "bash/*"
+  ],
+  "devDependencies": {
+    "electron-packager": "^7.7.0",
+    "electron-prebuilt": "^1.2.0",
+    "eslint": "^3.1.1",
+    "eslint-config-airbnb": "^9.0.1",
+    "eslint-plugin-import": "^1.11.1"
+  }
+}

@@ -4,6 +4,7 @@ import json
 from osf_scraper_api.utilities.osf_helper import get_fb_scraper
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.settings import ENV_DICT
+from osf_scraper_api.crawler.utils import save_job_status
 from osf_scraper_api.utilities.email_helper import send_email
 
 
@@ -21,13 +22,15 @@ def whats_on_your_mind_job(fb_username, fb_password):
         url = '{API_DOMAIN}/api/crawler/fb_friends/'.format(API_DOMAIN=ENV_DICT['API_DOMAIN'])
         _log('++ making post request to {}'.format(url))
         headers = {'content-type': 'application/json'}
+        save_job_status(status='downloading posts')
         requests.post(url, data=json.dumps(job_params), headers=headers)
     except Exception as e:
         _log('++ /api/whats_on_your_mind/ failed to login')
-        send_email(
-            to_email=fb_username,
-            subject='Open Source Feeds',
-            template_path='emails/whats_on_your_mind.html',
-            template_vars={}
-        )
-        raise e
+        save_job_status(status='login failed')
+        if ENV_DICT.get('MAIL_PASSWORD'):
+            send_email(
+                to_email=fb_username,
+                subject='Open Source Feeds',
+                template_path='emails/whats_on_your_mind.html',
+                template_vars={}
+            )

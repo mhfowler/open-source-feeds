@@ -51,3 +51,4 @@ def run_job(job_type, job_params, fb_username, output_bin):
     output_path = 'output/{}/{}.json'.format(output_bin, timestamp)
     _log('++ saving results to: {}'.format(output_path))
     save_dict(data_dict=output_dict, destination=output_path)
+    _log('++ job complete')

@@ -1,4 +1,6 @@
 import json
+import requests
+import threading
 
 from slackclient import SlackClient
 
@@ -37,22 +39,40 @@ def slack_notify_message(message, channel_name=None):
     -- note that a suffix may be appended to this channel name automatically SLACK_CHANNEL_SUFFIX is in env.json
     :return: None
     """
+    if ENV_DICT.get('SLACK_WEBHOOK_URL'):
+        webhook_url = ENV_DICT['SLACK_WEBHOOK_URL']
+        slack_data = {'text': message}
+        try:
+            requests.post(
+                webhook_url, data=json.dumps(slack_data),
+                headers={'Content-Type': 'application/json'}
+            )
+        except:
+            pass
+        # def webhook_post():
+        #     requests.post(
+        #         webhook_url, data=json.dumps(slack_data),
+        #         headers={'Content-Type': 'application/json'}
+        #     )
+        # t = threading.Thread(target=webhook_post)
+        # t.start()
 
-    # get slack token
-    bot_token = ENV_DICT.get('SLACKBOT_TOKEN')
-    sc = SlackClient(bot_token)
+    else:
+        # get slack token
+        bot_token = ENV_DICT.get('SLACKBOT_TOKEN')
+        sc = SlackClient(bot_token)
 
-    # if a suffix is specified for this environment, add suffix to channel_name
-    cname = channel_name or '_osf_scraper_api'
-    slack_suffix = ENV_DICT.get('SLACK_CHANNEL_SUFFIX')
-    if slack_suffix:
-        cname += slack_suffix
+        # if a suffix is specified for this environment, add suffix to channel_name
+        cname = channel_name or '_osf_scraper_api'
+        slack_suffix = ENV_DICT.get('SLACK_CHANNEL_SUFFIX')
+        if slack_suffix:
+            cname += slack_suffix
 
-    # lookup channel_id associated with channel name
-    # (will throw an error if channel name doesn't exist which is what we want)
-    channel_id = channel_map[cname]
+        # lookup channel_id associated with channel name
+        # (will throw an error if channel name doesn't exist which is what we want)
+        channel_id = channel_map[cname]
 
-    # make a request to API to log message to slack
-    sc.api_call('chat.postMessage', channel=channel_id,
-                text='{message}'.format(message=message), link_names=1,
-                as_user=True)
+        # make a request to API to log message to slack
+        sc.api_call('chat.postMessage', channel=channel_id,
+                    text='{message}'.format(message=message), link_names=1,
+                    as_user=True)

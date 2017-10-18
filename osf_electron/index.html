@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="foundation.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="no-docker">
+   <div class="no-docker optional">
+        <p>
+            To make this work you first need to install Docker for Mac.
+            You can download it by navigating to this url in your browser:
+            https://store.docker.com/editions/community/docker-ce-desktop-mac
+        </p>
+        <p>
+            After you have installed Docker, click continue.
+        </p>
+    </div>
+    <div>
+        <button id="continue-button" class="button osf-button next-button" type="submit">Continue</button>
+    </div>
+</div>
+<div class="main-window">
+    <form>
+        <div class="row title-row">
+            <div class="medium-12 columns">
+                <span class="osf-title">Facebook Scraper</span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-12 columns">
+                <label>
+                    FB Username
+                    <span class="input-group">
+                        <input class="input-group-field" type="text" name="fb-username" placeholder="username@gmail.com">
+                    </span>
+                </label>
+                <label>
+                    FB Password
+                    <span class="input-group">
+                        <input class="input-group-field" type="password" name="fb-password" placeholder="password">
+                    </span>
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="medium-12 columns">
+                <button id="generate-button" class="button osf-button generate-button optional" type="submit">Generate PDF</button>
+                <button id="regenerate-button" class="button osf-button regenerate-button optional" type="submit">Generate PDF</button>
+                <button id="stop-button" class="button osf-button stop-button optional" type="submit">Stop</button>
+                <div style="margin-bottom: 20px" class="success-alert optional">
+                    <p style="margin-top: 15px;">
+                        Your PDF is generating. Please leave your computer plugged in and connected
+                        to the internet overnight and it should be finished tomorrow morning.
+                    </p>
+                    <p>
+                        If you like to watch code run, you can view the logs below.
+                    </p>
+                </div>
+                <div class="finished optional">
+                    <p>
+                        Your PDF is finished and is on your desktop.
+                    </p>
+                    <div>
+                        If you would like to contribute your downloaded posts to our archive of Facebook
+                        statuses click the button below (your password will still not be shared).
+                    </div>
+                    <button id="upload-button" class="button osf-button upload-button" type="submit">Upload Posts</button>
+                    <div class="uploading optional">
+                        ++ uploading
+                    </div>
+                </div>
+                <div class="uploaded optional">
+                    <p>
+                        Your statuses have been uploaded, thank you.
+                    </p>
+                     <button id="view-button" class="button osf-button view-button" type="submit">View PDF</button>
+                </div>
+                <div class="loading-message optional"></div>
+                <div class="error-alert optional">
+                    ...error
+                </div>
+                <div class="no-docker optional">
+                    <p>
+                        To make this work you first need to install <a href="https://docs.docker.com/docker-for-mac/install/">Docker for Mac</a>.
+                        You can download it <a href="https://download.docker.com/mac/stable/Docker.dmg">here</a>.
+                    </p>
+                    <p>
+                        After you have installed Docker, click this button.
+                    </p>
+
+                    <!--<p>-->
+                        <!--This scraper uses Docker because it uses-->
+                        <!--<a href="https://www.are.na/sam-hart/open-source-feeds">Open Source Feeds</a>-->
+                        <!--in the backend which is intended to run in a number of places besides this app.-->
+                    <!--</p>-->
+                </div>
+                <div class="state"></div>
+                <div class="debug optional"></div>
+            </div>
+        </div>
+        <div class="row osf-explanation optional">
+            <div class="medium-12 columns">
+                To protect your privacy, this program runs locally on your laptop, your username and password are only sent to Facebook.
+            </div>
+        </div>
+        <div class="row login-failed optional">
+            <div class="medium-12 columns">
+                Failed to login to Facebook, try again with a different username and password.
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+<script>
+    // You can also require other files to run in this process
+    require('./renderer.js')
+</script>
+</html>

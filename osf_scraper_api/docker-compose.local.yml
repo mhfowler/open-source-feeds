@@ -6,7 +6,7 @@
         context: ../
         dockerfile: osf_scraper_api/BaseDockerFile
     osf_scraper_api:
-      image: '${BUILD_ENV}_osf_scraper_api'
+      image: 'mfowler/local_osf_scraper_api'
       build:
         context: ../
         dockerfile: osf_scraper_api/Dockerfile

@@ -1,19 +1,21 @@
 import random
 
 from redis import StrictRedis
-from rq import Queue
+from rq import Queue, get_failed_queue
 from rq.job import Job
+from rq.worker import Worker
 from redis import Redis
 from rq.registry import StartedJobRegistry
 
 from osf_scraper_api.settings import ENV_DICT, DEFAULT_JOB_TIMEOUT
+from osf_scraper_api.utilities.log_helper import _log
 
 
 def enqueue_job(*args, **kwargs):
     fb_username = kwargs['fb_username']
     job_fun = args[0]
     queue = get_queue_for_user(fb_username)
-    queue.enqueue(job_fun, **kwargs)
+    return queue.enqueue(job_fun, **kwargs)
 
 
 def get_redis_connection():
@@ -51,8 +53,11 @@ def get_running_rq_jobs(queue_name):
     running_job_ids = registry.get_job_ids() # Jobs which are exactly running.
     jobs = []
     for job_id in running_job_ids:
-        job = Job.fetch(job_id, connection=redis_conn)
-        jobs.append(job)
+        try:
+            job = Job.fetch(job_id, connection=redis_conn)
+            jobs.append(job)
+        except:
+            continue
     return jobs
 
 
@@ -70,15 +75,16 @@ def str_to_probability(in_str):
 
 
 def get_queue_name(fb_username):
-    map = {
-        'happyrainbows93@yahoo.com': 'osf0',
-        'maxhfowler@gmail.com': 'osf1'
-    }
-    if map.get(fb_username):
-        return map[fb_username]
-    index = str_to_probability(fb_username)
-    queue_name = ENV_DICT['QUEUE_NAMES'][index]
-    return queue_name
+    # map = {
+    #     'happyrainbows93@yahoo.com': 'osf0',
+    #     'maxhfowler@gmail.com': 'osf1'
+    # }
+    # if map.get(fb_username):
+    #     return map[fb_username]
+    # index = str_to_probability(fb_username)
+    # queue_name = ENV_DICT['QUEUE_NAMES'][index]
+    return 'osf0'
+    # return queue_name
 
 
 def get_queue_for_user(fb_username):
@@ -88,8 +94,41 @@ def get_queue_for_user(fb_username):
     return queue
 
 
+def clear_old_workers():
+    _log('++ clearing old rq workers')
+    conn = get_redis_connection()
+    for w in Worker.all(conn):
+        if w.state != 'busy':
+            _log('++ stopping rq worker {}'.format(w.pid))
+            w.register_death()
+
+
+def stop_jobs():
+    queue_map = get_queue_map()
+    for queue_name, queue in queue_map.items():
+        _log('++ clearing queue: {}'.format(queue_name))
+        queue.empty()
+    _log('++ clearing failed queue')
+    failed = get_osf_queue(queue_name='failed')
+    failed.empty()
+    conn = get_redis_connection()
+    for w in Worker.all(conn):
+        _log('++ stopping rq worker {}'.format(w.pid))
+        w.register_death()
+
+
+def restart_failed_jobs():
+    failed_queue = get_osf_queue('failed')
+    new_queue = get_osf_queue(ENV_DICT['QUEUE_NAMES'][0])
+    failed_jobs = failed_queue.get_jobs()
+    for job in failed_jobs:
+        _log('++ requeueing failed job: {}'.format(job.id))
+        new_queue.enqueue_job(job)
+
+
 if __name__ == '__main__':
-    queue_name = get_queue_name(fb_username='maxhfowler@gmail.com')
-    jobs = get_rq_jobs(queue_name)
-    for job in jobs:
-        print job.func_name
+    clear_old_workers()
+    # queue_name = get_queue_name(fb_username='maxhfowler@gmail.com')
+    # jobs = get_rq_jobs(queue_name)
+    # for job in jobs:
+    #     print job.func_name

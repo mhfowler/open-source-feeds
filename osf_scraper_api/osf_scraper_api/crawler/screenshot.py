@@ -15,7 +15,8 @@ from osf_scraper_api.utilities.osf_helper import get_fb_scraper, paginate_list
 from osf_scraper_api.utilities.fs_helper import file_exists
 from osf_scraper_api.utilities.fs_helper import save_file
 from osf_scraper_api.settings import ENV_DICT
-from osf_scraper_api.crawler.utils import get_user_from_user_file, fetch_friends_of_user, get_screenshot_output_key_from_post
+from osf_scraper_api.crawler.utils import get_user_from_user_file, \
+    fetch_friends_of_user, get_screenshot_output_key_from_post, filter_posts
 from osf_scraper_api.utilities.selenium_helper import restart_selenium
 from osf_scraper_api.utilities.rq_helper import get_rq_jobs_for_user, enqueue_job
 
@@ -23,7 +24,7 @@ from osf_scraper_api.utilities.rq_helper import get_rq_jobs_for_user, enqueue_jo
 def screenshot_user_job(user_file, input_folder, no_skip, fb_username, fb_password):
     _log('++ starting screenshots job for: {}'.format(user_file))
     user = get_user_from_user_file(user_file=user_file, input_folder=input_folder)
-    user_posts = load_dict(user_file)['posts'][user]
+    user_posts = load_dict(user_file)
     posts_to_scrape = []
     for post in user_posts:
         output_key = get_screenshot_output_key_from_post(user=user, post=post)
@@ -52,7 +53,7 @@ def screenshot_post_helper(post, fb_scraper):
         image_url = save_file(source_file_path=temp_path, destination=output_path)
         os.unlink(f.name)
         os.unlink(temp_path)
-        _log('++ successfuly uploaded to: `{}`'.format(image_url))
+        _log('++ successfuly saved to: `{}`'.format(image_url))
         return True
     else:
         _log('++ no post found at link')
@@ -97,7 +98,7 @@ def screenshot_multi_user_job(input_folder, no_skip, fb_username, fb_password, u
     for index, user_file in enumerate(user_files):
         try:
             user = get_user_from_user_file(user_file=user_file, input_folder=input_folder)
-            user_posts = load_dict(user_file)['posts'][user]
+            user_posts = load_dict(user_file)
             posts_to_scrape = []
             for post in user_posts:
                 output_key = get_screenshot_output_key_from_post(user=user, post=post)
@@ -123,6 +124,8 @@ def screenshot_multi_user_job(input_folder, no_skip, fb_username, fb_password, u
         all_posts = random.sample(all_posts, min(ENV_DICT.get("TEST_SAMPLE_SIZE"), len(all_posts)))
     else:
         page_size = 100
+    # filter posts
+    all_posts = filter_posts(all_posts)
     # now start jobs to screenshot the posts in pages
     pages = paginate_list(mylist=all_posts, page_size=page_size)
     _log('++ enqueing {} posts in {} jobs'.format(len(all_posts), len(pages)))
@@ -135,6 +138,9 @@ def screenshot_multi_user_job(input_folder, no_skip, fb_username, fb_password, u
                           timeout=3600,
                           post_process=post_process
                           )
+    if post_process and not pages:
+        _log('++ no jobs enqueued, so calling screenshot post process directly')
+        screenshots_post_process(fb_username=fb_username, fb_password=fb_password)
 
 
 def screenshot_posts(posts, fb_username, fb_password, post_process=False):
@@ -152,29 +158,44 @@ def screenshot_posts(posts, fb_username, fb_password, post_process=False):
     fb_scraper.quit_driver()
 
     if post_process:
-        _log('++ running post process check for pending jobs of user {}'.format(fb_username))
-        # check if there are any other pending scrape_posts jobs for this user
-        rq_jobs = get_rq_jobs_for_user(fb_username=fb_username)
-        current_job = get_current_job()
-        def filter_fun(job):
-            if job.func_name == 'osf_scraper_api.crawler.screenshot.screenshot_posts':
-                if job.kwargs.get('fb_username') == fb_username:
-                    if not current_job or current_job.id != job.id:
-                        return True
-            # otherwise return False
-            return False
-        pending = filter(filter_fun, rq_jobs)
-        # if no pending job found, then make request to start pdf job
-        if len(pending) == 0:
-            _log('++ starting post_process job to create a pdf for user: {}'.format(fb_username))
-            job_params = {
-                'fb_username': fb_username,
-                'fb_password': fb_password
-            }
-            url = '{API_DOMAIN}/api/crawler/pdf/'.format(API_DOMAIN=ENV_DICT['API_DOMAIN'])
-            headers = {'content-type': 'application/json'}
-            requests.post(url, data=json.dumps(job_params), headers=headers)
-            _log('++ curled job to scrape screenshots of {}'.format(fb_username))
-        else:
-            _log('++ found {} pending jobs, waiting for other jobs to finish'.format(len(pending)))
+        screenshots_post_process(fb_username=fb_username, fb_password=fb_password)
 
+
+def screenshots_post_process(fb_username, fb_password):
+    _log('++ running post process check for pending jobs of user {}'.format(fb_username))
+    # check if there are any other pending scrape_posts jobs for this user
+    rq_jobs = get_rq_jobs_for_user(fb_username=fb_username)
+    current_job = get_current_job()
+
+    def filter_fun(job):
+        if job.func_name == 'osf_scraper_api.crawler.screenshot.screenshot_posts':
+            if job.kwargs.get('fb_username') == fb_username:
+                if not current_job or current_job.id != job.id:
+                    return True
+        # otherwise return False
+        return False
+
+    pending = filter(filter_fun, rq_jobs)
+    # if no pending job found, then make request to start pdf job
+    if len(pending) == 0:
+        _log('++ starting post_process job to create a pdf for user: {}'.format(fb_username))
+        job_params = {
+            'fb_username': fb_username,
+            'fb_password': fb_password
+        }
+        url = '{API_DOMAIN}/api/crawler/pdf/'.format(API_DOMAIN=ENV_DICT['API_DOMAIN'])
+        headers = {'content-type': 'application/json'}
+        requests.post(url, data=json.dumps(job_params), headers=headers)
+        _log('++ curled job to scrape screenshots of {}'.format(fb_username))
+    else:
+        job_logs = []
+        for job in rq_jobs:
+            j = {
+                'id': job.id,
+                'started_at': str(job.started_at)
+            }
+            job_logs.append(j)
+        _log('++ found {} pending jobs, waiting for other jobs to finish | current_job: {}'.format(
+            len(pending),
+            current_job.id if current_job else None
+        ))

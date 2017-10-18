@@ -5,13 +5,13 @@ import hashlib
 import datetime
 
 from osf_scraper_api.utilities.fs_helper import get_file_as_string
-from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder
+from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder, save_dict, load_dict
 from  osf_scraper_api.utilities.log_helper import _log
 from osf_scraper_api.settings import ENV_DICT
 
 
 def get_posts_folder():
-    return 'jobs/whats_on_your_mind'
+    return ENV_DICT['POSTS_FOLDER']
 
 
 def get_user_from_user_file(user_file, input_folder):
@@ -76,3 +76,57 @@ def get_screenshot_output_key_from_post(user, post):
         date_str = 'None'
     output_key = 'screenshots/{}-{}-{}.png'.format(user, date_str, post_id)
     return output_key
+
+
+def save_job_params(fb_username, job_params):
+    output_key = 'params/{}.json'.format(fb_username)
+    save_dict(data_dict=job_params, destination=output_key)
+
+
+def load_job_params(fb_username):
+    output_key = 'params/{}.json'.format(fb_username)
+    job_params = load_dict(output_key)
+    return job_params
+
+
+def save_job_status(status, message=None):
+    output_key = 'status.json'
+    data_dict = {
+        'status': status,
+        'message': message
+    }
+    save_dict(data_dict=data_dict, destination=output_key)
+
+
+def filter_posts(posts):
+    cutoff_date = datetime.datetime(month=11, day=8, year=2016, hour=20)
+    def filter_fun(p):
+        try:
+            d = datetime.datetime.fromtimestamp(int(p['date']))
+            if d > cutoff_date:
+                return True
+            else:
+                return False
+        except:
+            return False
+
+    posts = filter(filter_fun, posts)
+    _log('++ filtered down to {} posts after cutoff date'.format(len(posts)))
+
+    # filter more
+    def filter_fun(post):
+        post_content = post['content']
+        text = post_content.get('text')
+        if text and ('birthday' in text.lower()):
+            return False
+        if text and (' bday ' in text.lower()):
+            return False
+        if text and (' belated ' in text.lower()):
+            return False
+        if post_content.get('not_just_text'):
+            return False
+        return True
+
+    posts = filter(filter_fun, posts)
+    _log('++ filtered down to {} posts without links'.format(len(posts)))
+    return posts
