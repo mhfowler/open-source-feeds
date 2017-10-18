@@ -10,7 +10,7 @@
   become_user: root
 
 - name: Ensure docker-compose file is up to date
-  action: template src=/Users/maxfowler/computer/projects/opensourcefeeds/osf_scraper_api/prod-docker-compose.yml dest=/srv/docker-compose.yml
+  action: template src=/Users/maxfowler/computer/projects/opensourcefeeds/osf_scraper_api/docker-compose.prod.yml dest=/srv/docker-compose.yml
 
 - name: Run docker-compose down
   command: /usr/local/bin/docker-compose -f /srv/docker-compose.yml down
@@ -24,3 +24,6 @@
 
 - name: Run docker-compose up
   command: /usr/local/bin/docker-compose -f /srv/docker-compose.yml up -d
+
+- name: Curl test endpoint
+  shell: 'curl -X GET http://{{inventory_hostname}}/api/email/'

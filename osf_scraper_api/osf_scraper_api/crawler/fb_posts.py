@@ -8,6 +8,7 @@ from rq import get_current_job
 
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception, _log_image
 from osf_scraper_api.utilities.osf_helper import get_fb_scraper
+from osf_scraper_api.crawler.utils import get_posts_folder
 from osf_scraper_api.utilities.email_helper import send_email
 from osf_scraper_api.settings import SELENIUM_URL, DATA_DIR, ENV_DICT
 from osf_scraper_api.utilities.fs_helper import save_dict
@@ -57,13 +58,14 @@ def fb_posts_post_process(central_user, fb_username, fb_password):
     # if no jobs found, then make request to start screenshots jobs
     if len(pending) == 0:
         _log('++ starting post_process job to screenshot posts for user: {}'.format(fb_username))
+        posts_folder = get_posts_folder()
         job_params = {
             'fb_username': fb_username,
             'fb_password': fb_password,
             "central_user": central_user,
             "no_skip": False,
             "post_process": True,
-            "input_folder": 'jobs/whats_on_your_mind'
+            "input_folder": posts_folder
         }
         url = '{API_DOMAIN}/api/crawler/fb_screenshots/'.format(API_DOMAIN=ENV_DICT['API_DOMAIN'])
         headers = {'content-type': 'application/json'}

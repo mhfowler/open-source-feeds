@@ -39,13 +39,16 @@ def slack_notify_message(message, channel_name=None):
     -- note that a suffix may be appended to this channel name automatically SLACK_CHANNEL_SUFFIX is in env.json
     :return: None
     """
-    if not channel_name:
+    if ENV_DICT.get('SLACK_WEBHOOK_URL'):
         webhook_url = ENV_DICT['SLACK_WEBHOOK_URL']
         slack_data = {'text': message}
-        requests.post(
-            webhook_url, data=json.dumps(slack_data),
-            headers={'Content-Type': 'application/json'}
-        )
+        try:
+            requests.post(
+                webhook_url, data=json.dumps(slack_data),
+                headers={'Content-Type': 'application/json'}
+            )
+        except:
+            pass
         # def webhook_post():
         #     requests.post(
         #         webhook_url, data=json.dumps(slack_data),

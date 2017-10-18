@@ -1,6 +1,7 @@
 import requests
 import json
 import  time
+import os
 import random
 
 from flask import make_response, jsonify, Blueprint, request, abort
@@ -9,16 +10,18 @@ from osf_scraper_api.crawler.fb_posts import scrape_fb_posts_job, fb_posts_post_
 from osf_scraper_api.crawler.screenshot import screenshot_user_job, screenshot_multi_user_job
 from osf_scraper_api.crawler.utils import fetch_friends_of_user
 from osf_scraper_api.crawler.utils import get_unprocessed_friends
-from osf_scraper_api.crawler.utils import get_user_posts_file
+from osf_scraper_api.crawler.utils import get_user_posts_file, save_job_params
 from osf_scraper_api.crawler.make_pdf import make_pdf_job, aggregate_posts_job
 from osf_scraper_api.crawler.whats_on_your_mind import whats_on_your_mind_job
 from osf_scraper_api.crawler.fb_friends import crawler_scrape_fb_friends
 from osf_scraper_api.settings import TEMPLATE_DIR
 from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder
+from osf_scraper_api.utilities.s3_helper import s3_upload_folder
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.utilities.osf_helper import paginate_list, get_fb_scraper
 from osf_scraper_api.crawler.test_job import test_job
-from osf_scraper_api.utilities.rq_helper import enqueue_job
+from osf_scraper_api.crawler.utils  import save_job_status
+from osf_scraper_api.utilities.rq_helper import enqueue_job, stop_jobs, restart_failed_jobs
 from osf_scraper_api.settings import ENV_DICT
 
 
@@ -28,6 +31,7 @@ def get_crawler_blueprint(osf_queue):
     @crawler_blueprint.route('/api/whats_on_your_mind/', methods=['POST'])
     def whats_on_your_mind_endpoint():
         _log('++ new request to /api/whats_on_your_mind/')
+        save_job_status(status='initializing')
         params = request.get_json()
         required_fields = [
             'fb_username',
@@ -39,6 +43,8 @@ def get_crawler_blueprint(osf_queue):
 
         fb_username = params['fb_username']
         fb_password = params['fb_password']
+        del params['fb_password']
+        save_job_params(fb_username, params)
         enqueue_job(whats_on_your_mind_job, fb_username=fb_username, fb_password=fb_password)
         return make_response(jsonify({
             'message': "Thanks, we'll send an email to {} in 1-2 days when your PDF is finished.".format(fb_username)
@@ -188,15 +194,25 @@ def get_crawler_blueprint(osf_queue):
         params = request.get_json()
         fb_username = params['fb_username']
         fb_password = params['fb_password']
+        bottom_crop_pix = params.get('bottom_crop_pix', 5)
+        not_chronological = params.get('not_chronological', False)
         if not params.get('no_aggregate'):
             _log('++ enqueing aggregate_posts_job')
             job = enqueue_job(aggregate_posts_job, fb_username=fb_username, fb_password=fb_password, timeout=3600)
             _log('++ enqueing make_pdf_job')
-            enqueue_job(make_pdf_job, depends_on=job, fb_username=fb_username, timeout=259200)
+            enqueue_job(make_pdf_job, depends_on=job,
+                        fb_username=fb_username,
+                        bottom_crop_pix=bottom_crop_pix,
+                        not_chronological=not_chronological,
+                        timeout=259200)
         else:
             _log('++ skipping aggregate posts job')
             _log('++ enqueing make_pdf_job')
-            enqueue_job(make_pdf_job, fb_username=fb_username, timeout=259200)
+            enqueue_job(make_pdf_job,
+                        fb_username=fb_username,
+                        bottom_crop_pix=bottom_crop_pix,
+                        not_chronological=not_chronological,
+                        timeout=259200)
 
         return make_response(jsonify({
             'message': 'pdf job enqueued'
@@ -216,6 +232,45 @@ def get_crawler_blueprint(osf_queue):
     @crawler_blueprint.route('/api/test_job/', methods=['GET'])
     def test_job_endpoint():
         enqueue_job(test_job, fb_username='happyrainbows93@yahoo.com')
+        return make_response(jsonify({
+            'message': 'ok'
+        }), 200)
+
+    @crawler_blueprint.route('/api/stop/', methods=['POST'])
+    def stop_jobs_endpoint():
+        stop_jobs()
+        return make_response(jsonify({
+            'message': 'ok'
+        }), 200)
+
+    @crawler_blueprint.route('/api/restart_failed_jobs/', methods=['POST'])
+    def restart_failed_jobs_endpoint():
+        restart_failed_jobs()
+        return make_response(jsonify({
+            'message': 'ok'
+        }), 200)
+
+    @crawler_blueprint.route('/api/upload/', methods=['POST'])
+    def upload_endpoint():
+        params = request.get_json()
+        fs_base_path = ENV_DICT['FS_BASE_PATH']
+        fb_username = params.get('fb_username')
+        if not fb_username:
+            params_path = os.path.join(fs_base_path, 'params')
+            f_names = os.listdir(params_path)
+            if f_names:
+                fb_username = f_names[0].replace('.json', '')
+        destination = 'uploads/{}-{}'.format(
+            fb_username,
+            str(int(time.time()))
+        )
+        input = fs_base_path
+        children_dir = os.listdir(input)
+        for dir in children_dir:
+            if dir != 'screenshots':
+                input_path = os.path.join(input, dir)
+                output_path = os.path.join(destination, dir)
+                s3_upload_folder(source_folder_path=input_path, destination=output_path)
         return make_response(jsonify({
             'message': 'ok'
         }), 200)

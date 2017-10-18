@@ -41,6 +41,20 @@ def s3_upload_file(source_file_path, destination):
         bucket_name=ENV_DICT['S3_BUCKET_NAME']
     )
     os.system(cmd)
+    return get_s3_link(destination)
+
+
+def s3_upload_folder(source_folder_path, destination):
+    cmd = 'AWS_ACCESS_KEY_ID={AWS_ACCESS_KEY} AWS_SECRET_ACCESS_KEY={AWS_SECRET_ACCESS_KEY} ' \
+            'aws s3 cp --recursive "{local_path}" "s3://{bucket_name}/{output_path}"'.format(
+        AWS_ACCESS_KEY=ENV_DICT['AWS_ACCESS_KEY'],
+        AWS_SECRET_ACCESS_KEY=ENV_DICT['AWS_SECRET_KEY'],
+        local_path=source_folder_path,
+        output_path=destination,
+        bucket_name=ENV_DICT['S3_BUCKET_NAME']
+    )
+    os.system(cmd)
+    return get_s3_link(destination)
 
 
 def s3_download_file(s3_path, local_path):
