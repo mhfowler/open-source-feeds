@@ -11,7 +11,7 @@ from osf_scraper_api.utilities.osf_helper import get_fb_scraper
 from osf_scraper_api.crawler.utils import get_posts_folder
 from osf_scraper_api.utilities.email_helper import send_email
 from osf_scraper_api.settings import SELENIUM_URL, DATA_DIR, ENV_DICT
-from osf_scraper_api.utilities.fs_helper import save_dict
+from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
 from osf_scraper_api.crawler.utils import get_user_posts_file
 from osf_scraper_api.utilities.selenium_helper import restart_selenium
 from osf_scraper_api.utilities.rq_helper import get_rq_jobs_for_user
@@ -23,8 +23,12 @@ def scrape_fb_posts_job(users, params, fb_username, fb_password, post_process=Fa
     num_users = len(users)
     for index, user in enumerate(users):
         try:
+            user_posts_file = get_user_posts_file(user)
+            if file_exists(user_posts_file):
+                _log('++ skipping {}'.format(user))
+                continue
             params['users'] = [user]
-            params['output_path'] = get_user_posts_file(user)
+            params['output_path'] = user_posts_file
             params['replace'] = True
             if params.get('job_name'):
                 del params['job_name']

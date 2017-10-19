@@ -239,7 +239,7 @@ def make_pdf_job(fb_username, image_file_dir=None, bottom_crop_pix=5, not_chrono
             send_email(
                 to_email=fb_username,
                 # to_email='maxhfowler@gmail.com',
-                subject='Facebook Statuses From The Week After November 9, 2016',
+                subject='Facebook Statuses From The Week After November 8, 2016',
                 template_path='emails/whats_on_your_mind_result.html',
                 template_vars={'pdf_link': pdf_link}
             )
@@ -269,7 +269,7 @@ def create_pdf(image_file_dir, crop_file_dir, image_file_names, output_path, bot
     current_h = 0
 
     # create cover page
-    cover_title = "Facebook Statuses From The Week After November 9, 2016"
+    cover_title = "Facebook Statuses From The Week After November 8, 2016"
     pdf.add_page()
     pdf.set_font('Arial', 'B', 16)
     # pdf.set_x(50)

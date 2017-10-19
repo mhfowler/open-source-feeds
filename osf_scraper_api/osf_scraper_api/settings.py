@@ -49,4 +49,9 @@ if not os.path.exists(DATA_DIR):
 SELENIUM_URL = ENV_DICT.get('SELENIUM_URL')
 print 'SELENIUM_URL: {}'.format(SELENIUM_URL)
 
+# constants
+NUMBER_OF_POST_SWEEPS = 2
+NUMBER_OF_SCREENSHOT_SWEEPS = 2
+
+# defaults
 DEFAULT_JOB_TIMEOUT = 300

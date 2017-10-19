@@ -2,6 +2,7 @@ import sys
 import traceback
 import random
 import os
+import datetime
 
 from osf_scraper_api.utilities.slack_helper import slack_notify_message
 from osf_scraper_api.web.extensions import sentry
@@ -20,6 +21,11 @@ def _log(message, channel_name=None):
         if ENV_DICT.get('HOST_IP_ADDRESS'):
             message = message[2:]   # remove prefix
             message = '++ [{}]'.format(ENV_DICT.get('HOST_IP_ADDRESS')) + message
+        else:
+            message = message[2:]  # remove prefix
+            time = datetime.datetime.now()
+            time_str = time.strftime('%H:%M')
+            message = '++ {}'.format(time_str) + message
     print message
 
     # if slack logging is turned on

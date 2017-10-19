@@ -14,7 +14,7 @@ from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.utilities.osf_helper import get_fb_scraper, paginate_list
 from osf_scraper_api.utilities.fs_helper import file_exists
 from osf_scraper_api.utilities.fs_helper import save_file
-from osf_scraper_api.settings import ENV_DICT
+from osf_scraper_api.settings import ENV_DICT, NUMBER_OF_SCREENSHOT_SWEEPS
 from osf_scraper_api.crawler.utils import get_user_from_user_file, \
     fetch_friends_of_user, get_screenshot_output_key_from_post, filter_posts
 from osf_scraper_api.utilities.selenium_helper import restart_selenium
@@ -62,6 +62,10 @@ def screenshot_post_helper(post, fb_scraper):
 
 def screenshot_post(post, fb_scraper):
     try:
+        output_path = post['screenshot_path']
+        if file_exists(output_path):
+            _log('++ skipping {}'.format(output_path))
+            return
         screenshot_post_helper(post=post, fb_scraper=fb_scraper)
         # if we succeeded, then set num_initializations back to 0
         fb_scraper.num_initializations = 0
@@ -128,16 +132,21 @@ def screenshot_multi_user_job(input_folder, no_skip, fb_username, fb_password, u
     all_posts = filter_posts(all_posts)
     # now start jobs to screenshot the posts in pages
     pages = paginate_list(mylist=all_posts, page_size=page_size)
-    _log('++ enqueing {} posts in {} jobs'.format(len(all_posts), len(pages)))
-    for index, page in enumerate(pages):
-        _log('++ enqueing page {}'.format(index))
-        enqueue_job(screenshot_posts,
-                          posts=page,
-                          fb_username=fb_username,
-                          fb_password=fb_password,
-                          timeout=3600,
-                          post_process=post_process
-                          )
+    for sweep_number in range(0, NUMBER_OF_SCREENSHOT_SWEEPS):
+        _log('++ enqueing {num_posts} posts in {num_jobs} jobs, #{sweep_number}'.format(
+            num_posts=len(all_posts),
+            num_jobs=len(pages),
+            sweep_number=sweep_number
+        ))
+        for index, page in enumerate(pages):
+            _log('++ enqueing page {}'.format(index))
+            enqueue_job(screenshot_posts,
+                              posts=page,
+                              fb_username=fb_username,
+                              fb_password=fb_password,
+                              timeout=3600,
+                              post_process=post_process
+                              )
     if post_process and not pages:
         _log('++ no jobs enqueued, so calling screenshot post process directly')
         screenshots_post_process(fb_username=fb_username, fb_password=fb_password)

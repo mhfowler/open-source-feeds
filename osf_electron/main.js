@@ -1,8 +1,9 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const childProcess = require('child_process');
-const os = require('os')
+const os = require('os');
 const path = require('path');
 const fs = require('fs-extra');
+const request = require('request');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -128,7 +129,7 @@ function clearLog() {
 }
 
 function restartFailedJobs() {
-    return runCmd('restart_failed_jobs.sh');
+    // return runCmd('restart_failed_jobs.sh');
 }
 
 function initializeStateFromJobStatus() {
@@ -171,15 +172,19 @@ function createWindow() {
 
 function initiateJob() {
     log('++ make request to Docker');
-    log(`++ params: ${params.fbUsername}`);
-    log(`++ params: ${params.fbPassword}`);
-    const cmd = runCmd('initiate_job.sh', [params.fbUsername, params.fbPassword]);
 
-    cmd.on('close', (code) => {
-        if (code === 0) {
-            log('++ initiate_job success');
+    request({
+        url: 'http://localhost:80/api/whats_on_your_mind/',
+        method: 'POST',
+        json: true,
+        body: { fb_username: params.fbUsername, fb_password: params.fbPassword },
+    }, (error, response) => {
+        if (!error && response.statusCode === 200) {
+            log('++ initiate job success');
         } else {
-            log(`++ bash error: ${code}`);
+            log('++ error initiating job');
+            log(error);
+            log(JSON.stringify(response));
         }
     });
 }
@@ -199,7 +204,7 @@ ensureDockerUp = () => {
     const dockerComposePath = getFilePath('docker-compose.mac.yml');
     const cmd = runCmd('docker_up.sh', [dockerComposePath]);
     return cmd;
-}
+};
 
 function ensureDockerDown(clearJobStatusFlag) {
     log('++ running docker down');
@@ -322,9 +327,19 @@ function initiateHandlers() {
         setState({ status: 'uploading' });
         const dockerUpCmd = ensureDockerUp();
         dockerUpCmd.on('close', () => {
-            const cmd = runCmd('upload.sh', [params.fbUsername]);
-            cmd.on('close', () => {
-                setState({ status: 'uploaded' });
+            request({
+                url: 'http://localhost:80/api/upload/',
+                method: 'POST',
+                json: true,
+                body: { fb_username: params.fbUsername },
+            }, (error, response) => {
+                if (!error && response.statusCode === 200) {
+                    log('++ upload success');
+                    setState({ status: 'uploaded' });
+                } else {
+                    setState({ status: 'uploaded' });
+                    log('++ error uploading');
+                }
             });
         });
     });

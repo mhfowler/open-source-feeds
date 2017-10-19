@@ -22,7 +22,7 @@ from osf_scraper_api.utilities.osf_helper import paginate_list, get_fb_scraper
 from osf_scraper_api.crawler.test_job import test_job
 from osf_scraper_api.crawler.utils  import save_job_status
 from osf_scraper_api.utilities.rq_helper import enqueue_job, stop_jobs, restart_failed_jobs
-from osf_scraper_api.settings import ENV_DICT
+from osf_scraper_api.settings import ENV_DICT, NUMBER_OF_POST_SWEEPS
 
 
 def get_crawler_blueprint(osf_queue):
@@ -120,18 +120,23 @@ def get_crawler_blueprint(osf_queue):
         else:
             page_size = 50
         pages = paginate_list(mylist=users_to_scrape, page_size=page_size)
-        _log('++ enqueing {} users in {} jobs'.format(len(users_to_scrape), len(pages)))
-        for index, page in enumerate(pages):
-            _log('++ enqueing {} job'.format(index))
-            enqueue_job(scrape_fb_posts_job,
-                users=page,
-                params=params,
-                fb_username=params['fb_username'],
-                fb_password=params['fb_password'],
-                post_process=params.get('post_process'),
-                central_user=params.get('central_user'),
-                timeout=5000
-            )
+        for sweep_number in range(0, NUMBER_OF_POST_SWEEPS):
+            _log('++ enqueing {num_users} users in {num_jobs} jobs, #{sweep_number}'.format(
+                num_users=len(users_to_scrape),
+                num_jobs=len(pages),
+                sweep_number=sweep_number
+            ))
+            for index, page in enumerate(pages):
+                _log('++ enqueing {} job'.format(index))
+                enqueue_job(scrape_fb_posts_job,
+                    users=page,
+                    params=params,
+                    fb_username=params['fb_username'],
+                    fb_password=params['fb_password'],
+                    post_process=params.get('post_process'),
+                    central_user=params.get('central_user'),
+                    timeout=5000
+                )
         if not pages:
             if params.get('post_process'):
                 _log('++ enqueued 0 jobs, so starting post process function directly')

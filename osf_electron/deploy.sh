@@ -10,4 +10,4 @@ cp Instructions.txt "Facebook Scraper/Instructions.txt"
 echo "++ creating zip file"
 zip -r "Facebook Scraper.zip" "Facebook Scraper"
 echo "++ uploading to s3"
-aws s3 cp "Facebook Scraper.zip" s3://opensourcefeeds/downloads/ --profile osf
+aws s3 cp "Facebook Scraper.zip" "s3://opensourcefeeds/downloads/Facebook Scraper.zip" --profile osf
