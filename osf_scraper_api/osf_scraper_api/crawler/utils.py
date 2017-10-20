@@ -98,6 +98,16 @@ def save_job_status(status, message=None):
     save_dict(data_dict=data_dict, destination=output_key)
 
 
+def save_job_stage(fb_username, stage, job_ids):
+    output_key = 'stage.json'
+    data_dict = {
+        'fb_username': fb_username,
+        'stage': stage,
+        'jobs_ids': job_ids
+    }
+    save_dict(data_dict=data_dict, destination=output_key)
+
+
 def filter_posts(posts):
     cutoff_date = datetime.datetime(month=11, day=8, year=2016, hour=20)
     def filter_fun(p):

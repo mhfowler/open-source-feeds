@@ -129,7 +129,19 @@ function clearLog() {
 }
 
 function restartFailedJobs() {
-    // return runCmd('restart_failed_jobs.sh');
+    log('++ making request to restart any failed jobs');
+    request({
+        url: 'http://localhost:80/api/restart_failed_jobs/',
+        method: 'GET',
+    }, (error, response) => {
+        if (!error && response.statusCode === 200) {
+            log('++ restart request success');
+        } else {
+            log('++ error restarting failed jobs');
+            log(error);
+            log(JSON.stringify(response));
+        }
+    });
 }
 
 function initializeStateFromJobStatus() {
@@ -166,7 +178,6 @@ function createWindow() {
         dockerUpPollInterval = setInterval(dockerUpPollFun, 60000);
         initializeStateFromJobStatus();
         tailLog();
-        restartFailedJobs();
     });
 }
 
@@ -203,6 +214,14 @@ ensureDockerUp = () => {
     log('++ ensure docker is up');
     const dockerComposePath = getFilePath('docker-compose.mac.yml');
     const cmd = runCmd('docker_up.sh', [dockerComposePath]);
+    cmd.on('close', (code) => {
+        if (code === 0) {
+            // if docker is up, restart any failed jobs
+            restartFailedJobs();
+        } else {
+            log('++ failed to ensure docker is up');
+        }
+    });
     return cmd;
 };
 

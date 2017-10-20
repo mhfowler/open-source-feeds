@@ -33,32 +33,32 @@ def retry_handler(job, exc_type, exc_value, traceback):
     except:
         pass
 
-    # retries
-    job.refresh()
-    failures = job.meta.get('failures', 0) + 1
-    max_failures = job.meta.get('max_failures', default_max_failures)
-
-    if failures >= max_failures:
-        _log('rq job %s: failed too many times times - moving to failed queue' % job.id)
-        return True
-
-    _log('rq job %s: failed %d times - retrying' % (job.id, failures))
-
-    # there is a closure over queues so that we can specify them as command line arguments
-    for queue in queues:
-        if queue.name == job.origin:
-            # use rq_scheduler to delay scheduling the job
-            retry_delay = job.meta.get('retry_delay', default_retry_delay)
-            scheduler = Scheduler(connection=redis_connection, queue_name=job.origin)
-            job = scheduler.enqueue_in(
-                datetime.timedelta(seconds=retry_delay),
-                job.func,
-                *job.args,
-                **job.kwargs
-            )
-            job.meta['failures'] = failures
-            job.save()
-            return False
+    # # retries
+    # job.refresh()
+    # failures = job.meta.get('failures', 0) + 1
+    # max_failures = job.meta.get('max_failures', default_max_failures)
+    #
+    # if failures >= max_failures:
+    #     _log('++ rq job {} {}: failed {} times - moving to failed queue'.format(job.func_name, job.id, str(failures)))
+    #     return True
+    #
+    # _log('++ immediately retrying job {} {}: failed {} times - retrying'.format(job.func_name, job.id, str(failures)))
+    #
+    # # there is a closure over queues so that we can specify them as command line arguments
+    # for queue in queues:
+    #     if queue.name == job.origin:
+    #         # use rq_scheduler to delay scheduling the job
+    #         retry_delay = job.meta.get('retry_delay', default_retry_delay)
+    #         scheduler = Scheduler(connection=redis_connection, queue_name=job.origin)
+    #         job = scheduler.enqueue_in(
+    #             datetime.timedelta(seconds=retry_delay),
+    #             job.func,
+    #             *job.args,
+    #             **job.kwargs
+    #         )
+    #         job.meta['failures'] = failures
+    #         job.save()
+    #         return False
 
     # and then regardless, return True, such that exception gets passed
     # to the next handler which puts it in the failed queue

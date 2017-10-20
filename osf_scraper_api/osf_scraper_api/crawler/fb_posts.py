@@ -3,6 +3,7 @@ import time
 import os
 import datetime
 import requests
+import random
 
 from rq import get_current_job
 
@@ -19,6 +20,9 @@ from osf_scraper_api.utilities.rq_helper import get_rq_jobs_for_user
 
 def scrape_fb_posts_job(users, params, fb_username, fb_password, post_process=False, central_user=None):
     _log('++ starting scrape_fb_posts_job')
+    if random.random() < 0.5:
+        _log('++ test failing fb_posts job')
+        raise Exception('++ random failure')
     fb_scraper = get_fb_scraper(fb_username=fb_username, fb_password=fb_password)
     num_users = len(users)
     for index, user in enumerate(users):

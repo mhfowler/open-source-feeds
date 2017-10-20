@@ -24,4 +24,4 @@ echo "Docker is ready."
 # run docker images
 mkdir -p ~/Desktop/osf
 docker-compose -f "${docker_compose_file}" up -d
-sleep 2
+sleep 3
