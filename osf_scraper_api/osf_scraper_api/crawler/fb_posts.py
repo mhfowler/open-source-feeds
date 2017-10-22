@@ -13,16 +13,16 @@ from osf_scraper_api.crawler.utils import get_posts_folder
 from osf_scraper_api.utilities.email_helper import send_email
 from osf_scraper_api.settings import SELENIUM_URL, DATA_DIR, ENV_DICT
 from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
-from osf_scraper_api.crawler.utils import get_user_posts_file
+from osf_scraper_api.crawler.utils import get_user_posts_file, save_job_stage
 from osf_scraper_api.utilities.selenium_helper import restart_selenium
 from osf_scraper_api.utilities.rq_helper import get_rq_jobs_for_user
 
 
 def scrape_fb_posts_job(users, params, fb_username, fb_password, post_process=False, central_user=None):
     _log('++ starting scrape_fb_posts_job')
-    if random.random() < 0.5:
-        _log('++ test failing fb_posts job')
-        raise Exception('++ random failure')
+    # if random.random() < 0.5:
+    #     _log('++ test failing fb_posts job')
+    #     raise Exception('++ random failure')
     fb_scraper = get_fb_scraper(fb_username=fb_username, fb_password=fb_password)
     num_users = len(users)
     for index, user in enumerate(users):
@@ -46,20 +46,15 @@ def scrape_fb_posts_job(users, params, fb_username, fb_password, post_process=Fa
     _log('++ request complete')
     fb_scraper.quit_driver()
 
-    if post_process:
-        fb_posts_post_process(central_user=central_user, fb_username=fb_username, fb_password=fb_password)
 
-
-def fb_posts_post_process(central_user, fb_username, fb_password):
-    _log('++ running post process check for pending jobs of user {}'.format(central_user))
+def fb_posts_post_process(user, fb_username, fb_password):
+    _log('++ running post process check for pending jobs of user {}'.format(user))
     # check if there are any other pending scrape_posts jobs for this user
     rq_jobs = get_rq_jobs_for_user(fb_username=fb_username)
-    current_job = get_current_job()
     def filter_fun(job):
         if job.func_name == 'osf_scraper_api.crawler.fb_posts.scrape_fb_posts_job':
             if job.kwargs.get('fb_username') == fb_username:
-                if not current_job or current_job.id != job.id:
-                    return True
+                return True
         # otherwise return False
         return False
     pending = filter(filter_fun, rq_jobs)
@@ -70,7 +65,7 @@ def fb_posts_post_process(central_user, fb_username, fb_password):
         job_params = {
             'fb_username': fb_username,
             'fb_password': fb_password,
-            "central_user": central_user,
+            "central_user": user,
             "no_skip": False,
             "post_process": True,
             "input_folder": posts_folder
@@ -78,7 +73,8 @@ def fb_posts_post_process(central_user, fb_username, fb_password):
         url = '{API_DOMAIN}/api/crawler/fb_screenshots/'.format(API_DOMAIN=ENV_DICT['API_DOMAIN'])
         headers = {'content-type': 'application/json'}
         requests.post(url, data=json.dumps(job_params), headers=headers)
-        _log('++ curled job to scrape screenshots of {}'.format(central_user))
+        _log('++ advancing to screenshots stage')
+        save_job_stage(user=user, fb_username=fb_username, fb_password=fb_password, stage='advancing')
     else:
         _log('++ found {} pending jobs, waiting for other jobs to finish'.format(len(pending)))
 
@@ -178,9 +174,9 @@ class OsfScraper:
         s_params = self.params
 
         # log params
-        for key, val in s_params.items():
-            if key != 'fb_password':
-                _log('++ param[{}]: {}'.format(key, val))
+        # for key, val in s_params.items():
+        #     if key != 'fb_password':
+        #         _log('++ param[{}]: {}'.format(key, val))
         # initialize scraper
         if not self.fb_scraper:
             self.fb_scraper = get_fb_scraper(s_params['fb_username'], fb_password=s_params['fb_password'])

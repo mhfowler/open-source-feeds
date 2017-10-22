@@ -73,14 +73,9 @@ if __name__ == '__main__':
         worker = Worker(queues)
         worker.push_exc_handler(retry_handler)
 
-        if 'w1' in queue_names:
-            worker_num = '1'
-        elif 'w2' in queue_names:
-            worker_num = '2'
-        else:
-            worker_num = None
-
+        worker_num = os.environ.get('RQ_PROCESS_NUM')
         if worker_num:
+            _log('++ worker_num: {}'.format(worker_num))
             worker_id_path = 'workers/{}'.format(worker_num)
             requeue_queue = get_osf_queue(queue_names[0])
             # try to remove zombie worker

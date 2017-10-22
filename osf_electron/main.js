@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const fs = require('fs-extra');
 const request = require('request');
+const isOnline = require('is-online');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -14,14 +15,23 @@ let sender;
 let jobStatusPollInterval;
 let jobStatusPollFun;
 let dockerUpPollInterval;
+let checkStagePollFun;
+let checkStagePollInterval;
 let dockerUpPollFun;
 let ensureDockerUp;
 let tailCmd = null;
 let tailCmdPid = null;
+let isDockerUp = false;
+let totalMem = 1;
 
-
+const homeDir = os.homedir();
+const logPath = `${homeDir}/Desktop/osf/data/log.txt`;
 function log(msg) {
     console.log(msg);
+    fs.appendFile(logPath, msg + '\n');
+}
+
+function print(msg) {
     if (sender) {
         sender.send('debug', msg);
     }
@@ -106,7 +116,7 @@ function tailLog() {
         const closurePid = tailCmdPid;
         const closureLog = (data, cPid) => {
             if (closurePid === cPid) {
-                log(`${data}`);
+                print(`${data}`);
             }
         };
         tailCmd.stdout.on('data', (data) => {
@@ -128,20 +138,22 @@ function clearLog() {
     }
 }
 
-function restartFailedJobs() {
-    log('++ making request to restart any failed jobs');
-    request({
-        url: 'http://localhost:80/api/restart_failed_jobs/',
-        method: 'GET',
-    }, (error, response) => {
-        if (!error && response.statusCode === 200) {
-            log('++ restart request success');
-        } else {
-            log('++ error restarting failed jobs');
-            log(error);
-            log(JSON.stringify(response));
-        }
-    });
+function checkStageAndRestartFailedJobs() {
+    if (isDockerUp) {
+        log('++ making request to check stage');
+        request({
+            url: 'http://localhost:80/api/crawler/check_stage/',
+            method: 'GET',
+        }, (error, response) => {
+            if (!error && response.statusCode === 200) {
+                log('++ check stage request success');
+            } else {
+                log('++ error in check stage request');
+                log(error);
+                log(JSON.stringify(response));
+            }
+        });
+    }
 }
 
 function initializeStateFromJobStatus() {
@@ -175,9 +187,15 @@ function createWindow() {
         sender = mainWindow.webContents;
         mainWindow.webContents.send('did-finish-load');
         jobStatusPollInterval = setInterval(jobStatusPollFun, 2000);
-        dockerUpPollInterval = setInterval(dockerUpPollFun, 60000);
+        dockerUpPollInterval = setInterval(dockerUpPollFun, 300000);
+        if (checkStagePollInterval) {
+            clearInterval(checkStagePollInterval);
+        }
+        checkStagePollInterval = setInterval(checkStagePollFun, 60000);
         initializeStateFromJobStatus();
         tailLog();
+        totalMem = String(os.totalmem() / 1000.0 / 1000.0 / 1000.0).slice(0, 4);
+        log(`++ total memory: ${totalMem} GB`);
     });
 }
 
@@ -216,13 +234,16 @@ ensureDockerUp = () => {
     const cmd = runCmd('docker_up.sh', [dockerComposePath]);
     cmd.on('close', (code) => {
         if (code === 0) {
-            // if docker is up, restart any failed jobs
-            restartFailedJobs();
+            isDockerUp = true;
         } else {
             log('++ failed to ensure docker is up');
         }
     });
     return cmd;
+};
+
+checkStagePollFun = () => {
+    checkStageAndRestartFailedJobs();
 };
 
 function ensureDockerDown(clearJobStatusFlag) {
@@ -276,16 +297,20 @@ jobStatusPollFun = () => {
             }
         }
     }
+    const freeMem = String(os.freemem() / 1000.0 / 1000.0 / 1000.0).slice(0, 4);
+    log(`++ free memory: ${freeMem} GB`);
 };
 
 dockerUpPollFun = () => {
     const data = loadJobStatus();
-    if (data) {
-        // if docker is supposed to be running, ensure docker is up
-        if (data.status === 'downloading posts' || data.status === 'making pdf') {
+    isOnline().then((online) => {
+        if (data && online) {
             ensureDockerUp();
+        } else if (!online && data && (data.status === 'downloading posts')) {
+            log('++ not online, waiting to re-connect to the internet');
+            ensureDockerDown();
         }
-    }
+    });
 };
 
 function generateFunction(event, argument) {

@@ -15,7 +15,7 @@ from osf_scraper_api.utilities.osf_helper import get_fb_scraper, paginate_list
 from osf_scraper_api.utilities.fs_helper import file_exists
 from osf_scraper_api.utilities.fs_helper import save_file
 from osf_scraper_api.settings import ENV_DICT, NUMBER_OF_SCREENSHOT_SWEEPS
-from osf_scraper_api.crawler.utils import get_user_from_user_file, \
+from osf_scraper_api.crawler.utils import get_user_from_user_file, save_job_stage, \
     fetch_friends_of_user, get_screenshot_output_key_from_post, filter_posts
 from osf_scraper_api.utilities.selenium_helper import restart_selenium
 from osf_scraper_api.utilities.rq_helper import get_rq_jobs_for_user, enqueue_job
@@ -91,10 +91,6 @@ def screenshot_multi_user_job(input_folder, no_skip, fb_username, fb_password, u
                 # if file exists, append it to list to process
                 if file_exists(user_file):
                     user_files.append(user_file)
-                    if ENV_DICT.get('TEST_SAMPLE_SIZE'):
-                        if len(user_files) > 100:
-                            _log('++ truncating list of users to be < 100')
-                            break
                 if not index % 10:
                     _log('++ loading {}/{}'.format(index, len(friends)))
     all_posts = []
@@ -116,16 +112,16 @@ def screenshot_multi_user_job(input_folder, no_skip, fb_username, fb_password, u
                     posts_to_scrape.append(post)
             # add this users posts to the list of all posts
             all_posts.extend(posts_to_scrape)
-            if ENV_DICT.get('TEST_SAMPLE_SIZE'):
-                if len(all_posts) > ENV_DICT.get('TEST_SAMPLE_SIZE'):
+            if ENV_DICT.get('TEST_NUM_SCREENSHOTS'):
+                if len(all_posts) > ENV_DICT.get('TEST_NUM_SCREENSHOTS'):
                     break
         except:
             _log('++ failed to load posts for user: {}'.format(user_file))
         if not index % 10:
             _log('++ loading posts {}/{}'.format(index, len(user_files)))
-    if ENV_DICT.get("TEST_SAMPLE_SIZE"):
-        page_size = 2
-        all_posts = random.sample(all_posts, min(ENV_DICT.get("TEST_SAMPLE_SIZE"), len(all_posts)))
+    if ENV_DICT.get('TEST_SCREENSHOTS_PAGE_SIZE'):
+        page_size = ENV_DICT.get('TEST_SCREENSHOTS_PAGE_SIZE')
+        all_posts = random.sample(all_posts, min(ENV_DICT.get('TEST_NUM_SCREENSHOTS'), len(all_posts)))
     else:
         page_size = 100
     # filter posts
@@ -147,9 +143,8 @@ def screenshot_multi_user_job(input_folder, no_skip, fb_username, fb_password, u
                               timeout=3600,
                               post_process=post_process
                               )
-    if post_process and not pages:
-        _log('++ no jobs enqueued, so calling screenshot post process directly')
-        screenshots_post_process(fb_username=fb_username, fb_password=fb_password)
+    # save stage
+    save_job_stage(user=central_user, stage='screenshots', fb_username=fb_username, fb_password=fb_password)
 
 
 def screenshot_posts(posts, fb_username, fb_password, post_process=False):
@@ -166,21 +161,16 @@ def screenshot_posts(posts, fb_username, fb_password, post_process=False):
     _log('++ finished screenshotting all posts')
     fb_scraper.quit_driver()
 
-    if post_process:
-        screenshots_post_process(fb_username=fb_username, fb_password=fb_password)
 
-
-def screenshots_post_process(fb_username, fb_password):
+def screenshots_post_process(fb_username, fb_password, user):
     _log('++ running post process check for pending jobs of user {}'.format(fb_username))
     # check if there are any other pending scrape_posts jobs for this user
     rq_jobs = get_rq_jobs_for_user(fb_username=fb_username)
-    current_job = get_current_job()
 
     def filter_fun(job):
         if job.func_name == 'osf_scraper_api.crawler.screenshot.screenshot_posts':
             if job.kwargs.get('fb_username') == fb_username:
-                if not current_job or current_job.id != job.id:
-                    return True
+                return True
         # otherwise return False
         return False
 
@@ -195,7 +185,8 @@ def screenshots_post_process(fb_username, fb_password):
         url = '{API_DOMAIN}/api/crawler/pdf/'.format(API_DOMAIN=ENV_DICT['API_DOMAIN'])
         headers = {'content-type': 'application/json'}
         requests.post(url, data=json.dumps(job_params), headers=headers)
-        _log('++ curled job to scrape screenshots of {}'.format(fb_username))
+        save_job_stage(user=user, fb_username=fb_username, fb_password=fb_password, stage='pdf')
+        _log('++ advancing to aggregation stage')
     else:
         job_logs = []
         for job in rq_jobs:
@@ -204,7 +195,6 @@ def screenshots_post_process(fb_username, fb_password):
                 'started_at': str(job.started_at)
             }
             job_logs.append(j)
-        _log('++ found {} pending jobs, waiting for other jobs to finish | current_job: {}'.format(
+        _log('++ found {} pending jobs, waiting for other jobs to finish'.format(
             len(pending),
-            current_job.id if current_job else None
         ))

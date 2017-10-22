@@ -1,16 +1,17 @@
 import requests
 import json
-import  time
+import time
 import os
 import random
 
 from flask import make_response, jsonify, Blueprint, request, abort
+from rq.job import Job
 
 from osf_scraper_api.crawler.fb_posts import scrape_fb_posts_job, fb_posts_post_process
-from osf_scraper_api.crawler.screenshot import screenshot_user_job, screenshot_multi_user_job
+from osf_scraper_api.crawler.screenshot import screenshot_user_job, screenshot_multi_user_job, screenshots_post_process
 from osf_scraper_api.crawler.utils import fetch_friends_of_user
 from osf_scraper_api.crawler.utils import get_unprocessed_friends
-from osf_scraper_api.crawler.utils import get_user_posts_file, save_job_params
+from osf_scraper_api.crawler.utils import get_user_posts_file, save_job_params, load_last_uptime
 from osf_scraper_api.crawler.make_pdf import make_pdf_job, aggregate_posts_job
 from osf_scraper_api.crawler.whats_on_your_mind import whats_on_your_mind_job
 from osf_scraper_api.crawler.fb_friends import crawler_scrape_fb_friends
@@ -20,7 +21,7 @@ from osf_scraper_api.utilities.s3_helper import s3_upload_folder
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.utilities.osf_helper import paginate_list, get_fb_scraper
 from osf_scraper_api.crawler.test_job import test_job
-from osf_scraper_api.crawler.utils  import save_job_status, save_job_stage
+from osf_scraper_api.crawler.utils  import save_job_status, save_job_stage, load_job_stage
 from osf_scraper_api.utilities.rq_helper import enqueue_job, stop_jobs, restart_failed_jobs
 from osf_scraper_api.settings import ENV_DICT, NUMBER_OF_POST_SWEEPS
 
@@ -62,7 +63,8 @@ def get_crawler_blueprint(osf_queue):
                 fb_username=params['fb_username'],
                 fb_password=params['fb_password'],
                 no_skip=params.get('no_skip'),
-                post_process=post_process
+                post_process=post_process,
+                timeout=108000
             )
         else:
             central_user = params.get('central_user')
@@ -74,7 +76,8 @@ def get_crawler_blueprint(osf_queue):
                   fb_username=params['fb_username'],
                   fb_password=params['fb_password'],
                   no_skip=params.get('no_skip'),
-                  post_process=params.get('post_process')
+                  post_process=params.get('post_process'),
+                  timeout=108000,
                 )
         return make_response(jsonify({
             'message': 'fb_friend job enqueued'
@@ -106,8 +109,8 @@ def get_crawler_blueprint(osf_queue):
             _log('++ skipped {} users'.format(num_skipped))
 
         # for testing, reduce sample size
-        if ENV_DICT.get('TEST_SAMPLE_SIZE'):
-            sample_size = ENV_DICT.get('TEST_SAMPLE_SIZE')
+        if ENV_DICT.get('TEST_NUM_USERS'):
+            sample_size = ENV_DICT.get('TEST_NUM_USERS')
             _log('++ truncating users_to_scrape for testing: {}'.format(sample_size))
             users_to_scrape = random.sample(users_to_scrape, min(sample_size, len(users_to_scrape)))
 
@@ -115,8 +118,8 @@ def get_crawler_blueprint(osf_queue):
         num_to_scrape = len(users_to_scrape)
         num_total = len(users)
         _log('++ preparing to scrape {} users ({} total)'.format(num_to_scrape, num_total))
-        if ENV_DICT.get("TEST_SAMPLE_SIZE"):
-            page_size = 2
+        if ENV_DICT.get('TEST_POSTS_PAGE_SIZE'):
+            page_size = ENV_DICT.get('TEST_POSTS_PAGE_SIZE')
         else:
             page_size = 50
         pages = paginate_list(mylist=users_to_scrape, page_size=page_size)
@@ -140,18 +143,60 @@ def get_crawler_blueprint(osf_queue):
                 )
                 job_ids.append(job.id)
         # save which job_ids are in this stage
-        save_job_stage(fb_username=params['fb_username'], stage='scraping posts', job_ids=job_ids)
-        if not pages:
-            if params.get('post_process'):
-                _log('++ enqueued 0 jobs, so starting post process function directly')
-                fb_posts_post_process(
-                    central_user=params.get('central_user'),
-                    fb_username=params['fb_username'],
-                    fb_password=params['fb_password']
-                )
+        save_job_stage(
+            user=params['central_user'],
+            fb_username=params['fb_username'],
+            fb_password=params['fb_password'],
+            stage='posts',
+        )
         # finally return 'OK' response
         return make_response(jsonify({
             'message': 'fb_post job enqueued'
+        }), 200)
+
+    @crawler_blueprint.route('/api/crawler/check_stage/', methods=['GET'])
+    def check_job_stage_endpoint():
+        stage_dict = load_job_stage()
+        if not stage_dict:
+            _log('++ no stage found')
+            return make_response(jsonify({
+                'message': 'no stage found'
+            }), 200)
+        stage = stage_dict['stage']
+        restart_failed_jobs()
+        time.sleep(2)
+        # check how recently docker was restarted, if < 3 minutes... then don't advance stage
+        last_uptime = load_last_uptime()
+        now = int(time.time())
+        total_uptime_seconds = now - last_uptime
+        if (total_uptime_seconds < 60*3):
+            _log('++ skipping stage check due to recent restart')
+            return make_response(jsonify({
+                'message': 'ok'
+            }), 200)
+        _log('++ checking whether to advance stage')
+        if stage == 'advancing':
+            _log('++ in between stages')
+        if stage == 'posts':
+            _log('++ checking whether to advance from posts stage')
+            user = stage_dict['user']
+            fb_username = stage_dict['fb_username']
+            fb_password = stage_dict['fb_password']
+            fb_posts_post_process(user=user, fb_username=fb_username, fb_password=fb_password)
+        elif stage == 'screenshots':
+            _log('++ checking whether to advance from screenshots stage')
+            user = stage_dict['user']
+            fb_username = stage_dict['fb_username']
+            fb_password = stage_dict['fb_password']
+            screenshots_post_process(user=user, fb_username=fb_username, fb_password=fb_password)
+        elif stage == 'pdf':
+            pass
+        elif stage == 'finished':
+            pass
+        else:
+            raise Exception('++ invalid stage: {}'.format(stage))
+        return make_response(jsonify({
+            'message': 'ok'
         }), 200)
 
     @crawler_blueprint.route('/api/crawler/fb_screenshots/', methods=['POST'])
@@ -192,7 +237,7 @@ def get_crawler_blueprint(osf_queue):
                 fb_password=fb_password,
                 no_skip=no_skip,
                 post_process=post_process,
-                timeout = 600
+                timeout = 3600
             )
         return make_response(jsonify({
             'message': 'fb_screenshot job enqueued'
@@ -205,24 +250,13 @@ def get_crawler_blueprint(osf_queue):
         fb_password = params['fb_password']
         bottom_crop_pix = params.get('bottom_crop_pix', 5)
         not_chronological = params.get('not_chronological', False)
-        if not params.get('no_aggregate'):
-            _log('++ enqueing aggregate_posts_job')
-            job = enqueue_job(aggregate_posts_job, fb_username=fb_username, fb_password=fb_password, timeout=3600)
-            _log('++ enqueing make_pdf_job')
-            enqueue_job(make_pdf_job, depends_on=job,
-                        fb_username=fb_username,
-                        bottom_crop_pix=bottom_crop_pix,
-                        not_chronological=not_chronological,
-                        timeout=259200)
-        else:
-            _log('++ skipping aggregate posts job')
-            _log('++ enqueing make_pdf_job')
-            enqueue_job(make_pdf_job,
-                        fb_username=fb_username,
-                        bottom_crop_pix=bottom_crop_pix,
-                        not_chronological=not_chronological,
-                        timeout=259200)
-
+        _log('++ enqueing make_pdf_job')
+        enqueue_job(make_pdf_job,
+                    fb_username=fb_username,
+                    fb_password=fb_password,
+                    bottom_crop_pix=bottom_crop_pix,
+                    not_chronological=not_chronological,
+                    timeout=432000)
         return make_response(jsonify({
             'message': 'pdf job enqueued'
         }), 200)
@@ -276,7 +310,7 @@ def get_crawler_blueprint(osf_queue):
         input = fs_base_path
         children_dir = os.listdir(input)
         for dir in children_dir:
-            if dir != 'screenshots':
+            if dir not in ['screenshots', 'stage.json']:
                 input_path = os.path.join(input, dir)
                 output_path = os.path.join(destination, dir)
                 s3_upload_folder(source_folder_path=input_path, destination=output_path)

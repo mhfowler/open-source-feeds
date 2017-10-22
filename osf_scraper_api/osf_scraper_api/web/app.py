@@ -1,10 +1,13 @@
+import time
+
 import rq_dashboard
-from flask import Flask, Response, request, render_template
+from flask import Flask, Response, request, render_template, g
 
 from osf_scraper_api.api.facebook import get_facebook_blueprint
 from osf_scraper_api.api.utils import get_utils_blueprint
 from osf_scraper_api.api.helper import get_helpers_blueprint
 from osf_scraper_api.crawler.crawler_api import get_crawler_blueprint
+from osf_scraper_api.crawler.utils import save_last_uptime
 from osf_scraper_api.crawler.test_errors import get_test_errors_blueprint
 from osf_scraper_api.utilities.rq_helper import get_queue_map
 from osf_scraper_api.utilities.email_helper import send_email
@@ -15,7 +18,7 @@ from osf_scraper_api.web.extensions import sentry, mail
 
 # create flask app
 def create_app():
-    _log('++ using environ: {}'.format(ENV_DICT['ENVIRON']))
+    _log('++ using environ: {}, version: {}'.format(ENV_DICT['ENVIRON'], ENV_DICT.get('version')))
 
     app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=PROJECT_PATH)
     app.config.from_object(rq_dashboard.default_settings)
@@ -82,6 +85,12 @@ def create_app():
         _capture_exception(e)
         # re-raise error
         raise e
+
+    @app.before_first_request
+    def before_first_request_fun():
+        now = int(time.time())
+        g.last_uptime = now
+        save_last_uptime(now)
 
     # return the app
     return app

@@ -1,8 +1,11 @@
 import re
 import json
 import random
+import time
 import hashlib
 import datetime
+
+from flask import g
 
 from osf_scraper_api.utilities.fs_helper import get_file_as_string
 from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder, save_dict, load_dict
@@ -98,14 +101,54 @@ def save_job_status(status, message=None):
     save_dict(data_dict=data_dict, destination=output_key)
 
 
-def save_job_stage(fb_username, stage, job_ids):
+def save_job_stage(user, fb_username, fb_password, stage):
     output_key = 'stage.json'
     data_dict = {
+        'user': user,
         'fb_username': fb_username,
+        'fb_password': fb_password,
         'stage': stage,
-        'jobs_ids': job_ids
     }
     save_dict(data_dict=data_dict, destination=output_key)
+
+
+def load_job_stage():
+    output_key = 'stage.json'
+    if file_exists(output_key):
+        return load_dict(path=output_key)
+    else:
+        return None
+
+
+def clear_job_stage():
+    output_key = 'stage.json'
+    if file_exists(output_key):
+        save_dict({
+            'stage': 'finished'
+        }, output_key)
+
+
+def save_last_uptime(uptime):
+    output_key = 'uptime.json'
+    save_dict({
+        'uptime': uptime
+    }, output_key)
+
+
+def load_last_uptime():
+    try:
+        if g.last_uptime:
+            return g.last_uptime
+    except:
+        pass
+    output_key = 'uptime.json'
+    if file_exists(output_key):
+        data_dict = load_dict(output_key)
+        return data_dict['uptime']
+    else:
+        now = int(time.time())
+        save_last_uptime(now)
+        return now
 
 
 def filter_posts(posts):

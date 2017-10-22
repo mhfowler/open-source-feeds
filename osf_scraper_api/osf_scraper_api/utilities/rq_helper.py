@@ -65,11 +65,18 @@ def get_running_rq_jobs(queue_name):
     return jobs
 
 
+def get_failed_jobs():
+    failed_queue = get_osf_queue('failed')
+    failed_jobs = failed_queue.jobs
+    return failed_jobs
+
+
 def get_rq_jobs(queue_name):
     osf_queue = get_osf_queue(queue_name)
     queue_jobs = osf_queue.jobs
     running_jobs = get_running_rq_jobs(queue_name)
-    all_jobs = queue_jobs + running_jobs
+    failed_jobs = get_failed_jobs()
+    all_jobs = queue_jobs + running_jobs + failed_jobs
     return all_jobs
 
 

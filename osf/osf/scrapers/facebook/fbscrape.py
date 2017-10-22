@@ -286,13 +286,15 @@ class FbScraper():
         for i in range(0, 200):
             self.log('++ scrolling {}'.format(i))
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(1)
+            time.sleep(1.5)
             friends = self.driver.find_elements_by_css_selector('.fsl a')
             num_friends = len(friends)
             if num_friends == prev_num_friends:
                 j += 1
+            else:
+                j = 0
             prev_num_friends = num_friends
-            if j > 5:
+            if j > 7:
                 break
 
         friends = self.driver.find_elements_by_css_selector('.fsl a')

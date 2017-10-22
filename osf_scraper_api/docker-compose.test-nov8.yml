@@ -7,6 +7,9 @@
         dockerfile: osf_scraper_api/BaseDockerFile
     osf_scraper_api:
       image: 'mfowler/test-nov8_osf_scraper_api'
+      environment:
+        - OSF_QUEUE=osf0
+        - NUM_RQ_WORKERS=4
       build:
         context: ../
         dockerfile: osf_scraper_api/Dockerfile

@@ -25,7 +25,10 @@ def _log(message, channel_name=None):
             message = message[2:]  # remove prefix
             time = datetime.datetime.now()
             time_str = time.strftime('%H:%M')
-            message = '++ {}'.format(time_str) + message
+            prefix = '++ {}'.format(time_str)
+            if os.environ.get('RQ_PROCESS_NUM'):
+                prefix += ' ~{}'.format(os.environ.get('RQ_PROCESS_NUM'))
+            message = prefix + message
     print message
 
     # if slack logging is turned on
@@ -35,7 +38,7 @@ def _log(message, channel_name=None):
     # if fs logging is turned on
     if ENV_DICT.get('FS_LOG_PATH'):
         f_path = ENV_DICT['FS_LOG_PATH']
-        with open(f_path, 'a') as f:
+        with open(f_path, 'a+') as f:
             f.write(message + '\n')
 
 

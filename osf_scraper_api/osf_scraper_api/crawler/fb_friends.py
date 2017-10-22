@@ -10,10 +10,9 @@ from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
 def scrape_fb_friends_helper(fb_scraper, key_name, user):
     try:
         output_dict = fb_scraper.get_friends(users=[user])
-        save_dict(output_dict, key_name)
         # if succesful reset num_initializations
         fb_scraper.num_initializations = 0
-        _log('++ data saved to {}'.format(key_name))
+        return output_dict
     except Exception as e:
         _log('++ encountered exception: {}'.format(str(e)))
         if fb_scraper.num_initializations < 5:
@@ -36,7 +35,15 @@ def crawler_scrape_fb_friends(users, fb_username, fb_password, no_skip=False, po
                 _log('++ skipping {}'.format(key_name))
                 continue
         # otherwise scrape and then save to s3
-        scrape_fb_friends_helper(fb_scraper=fb_scraper, key_name=key_name, user=user)
+        output_dict1 = scrape_fb_friends_helper(fb_scraper=fb_scraper, key_name=key_name, user=user)
+        output_dict2 = scrape_fb_friends_helper(fb_scraper=fb_scraper, key_name=key_name, user=user)
+        friends1 = set(output_dict1[user])
+        friends2 = set(output_dict2[user])
+        friends = friends1.union(friends2)
+        _log('++ saving {} friends'.format(len(friends)))
+        output_dict = {user: list(friends)}
+        save_dict(output_dict, key_name)
+        _log('++ data saved to {}'.format(key_name))
     _log('++ request complete')
     try:
         fb_scraper.quit_driver()
