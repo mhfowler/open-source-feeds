@@ -158,6 +158,7 @@ class FbScraper():
                  fb_password,
                  command_executor=None,
                  driver=None,
+                 which_driver=None,
                  log=None,
                  log_image=None,
                  proxy=None,
@@ -173,6 +174,7 @@ class FbScraper():
         self.num_initializations = 0
         self.command_executor = command_executor
         self.proxy = proxy
+        self.which_driver = which_driver
         self.initialize_driver(driver=driver)
 
     def initialize_driver(self, driver=None):
@@ -186,8 +188,16 @@ class FbScraper():
                 desired_capabilities=chrome_options.to_capabilities()
             )
         else:
-            # chrome is default driver
-            if not driver:
+            if self.which_driver == 'phantomjs':
+                dcap = dict(DesiredCapabilities.PHANTOMJS)
+                dcap["phantomjs.page.settings.userAgent"] = (
+                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/53 "
+                    "(KHTML, like Gecko) Chrome/15.0.87"
+                )
+                driver = webdriver.PhantomJS(desired_capabilities=dcap)
+                driver.set_window_size(1400, 1000)
+                self.driver = driver
+            elif self.which_driver == 'chrome':
                 chrome_options = Options()
                 chrome_options.add_argument("--disable-notifications")
                 if self.proxy:

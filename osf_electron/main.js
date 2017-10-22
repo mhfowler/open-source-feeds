@@ -26,16 +26,18 @@ let totalMem = 1;
 
 const homeDir = os.homedir();
 const logPath = `${homeDir}/Desktop/osf/data/log.txt`;
-function log(msg) {
-    console.log(msg);
-    fs.appendFile(logPath, msg + '\n');
-}
-
 function print(msg) {
     if (sender) {
         sender.send('debug', msg);
     }
 }
+
+function log(msg) {
+    console.log(msg);
+    print(msg);
+    // fs.appendFile(logPath, msg + '\n');
+}
+
 
 function setState(newState) {
     state = Object.assign(state, newState);
@@ -297,8 +299,8 @@ jobStatusPollFun = () => {
             }
         }
     }
-    const freeMem = String(os.freemem() / 1000.0 / 1000.0 / 1000.0).slice(0, 4);
-    log(`++ free memory: ${freeMem} GB`);
+    // const freeMem = String(os.freemem() / 1000.0 / 1000.0 / 1000.0).slice(0, 4);
+    // log(`++ free memory: ${freeMem} GB`);
 };
 
 dockerUpPollFun = () => {
