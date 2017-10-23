@@ -10,7 +10,7 @@
         - redis
       environment:
         - OSF_QUEUE=osf0
-        - NUM_RQ_WORKERS=4
+        - NUM_RQ_WORKERS=2
       volumes:
         - "~/Desktop/osf/data:/srv/fs"
     redis:

@@ -175,6 +175,8 @@ class FbScraper():
         self.command_executor = command_executor
         self.proxy = proxy
         self.which_driver = which_driver
+        if not (which_driver or driver or command_executor):
+            self.which_driver = 'chrome'
         self.initialize_driver(driver=driver)
 
     def initialize_driver(self, driver=None):

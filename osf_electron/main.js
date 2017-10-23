@@ -22,6 +22,7 @@ let ensureDockerUp;
 let tailCmd = null;
 let tailCmdPid = null;
 let isDockerUp = false;
+let initiateJobInterval;
 let totalMem = 1;
 
 const homeDir = os.homedir();
@@ -202,22 +203,36 @@ function createWindow() {
 }
 
 function initiateJob() {
-    log('++ make request to Docker');
-
-    request({
-        url: 'http://localhost:80/api/whats_on_your_mind/',
-        method: 'POST',
-        json: true,
-        body: { fb_username: params.fbUsername, fb_password: params.fbPassword },
-    }, (error, response) => {
-        if (!error && response.statusCode === 200) {
-            log('++ initiate job success');
-        } else {
-            log('++ error initiating job');
-            log(error);
-            log(JSON.stringify(response));
-        }
-    });
+    log('++ waiting for open source feeds to start');
+    const initiateJobHelper = () => {
+        request({
+            url: 'http://localhost:80/api/hello/',
+            method: 'GET',
+        }, (error, response) => {
+            if (!error && response.statusCode === 200) {
+                log('++ open source feeds is running');
+                request({
+                    url: 'http://localhost:80/api/whats_on_your_mind/',
+                    method: 'POST',
+                    json: true,
+                    body: { fb_username: params.fbUsername, fb_password: params.fbPassword },
+                }, (err, resp) => {
+                    if (!err && resp.statusCode === 200) {
+                        log('++ initiate job success');
+                        clearInterval(initiateJobInterval);
+                    } else {
+                        log('++ error initiating job');
+                        log(error);
+                        log(JSON.stringify(response));
+                    }
+                });
+            } else {
+                log('++ waiting for open source feeds to start');
+                ensureDockerUp();
+            }
+        });
+    };
+    initiateJobInterval = setInterval(initiateJobHelper, 2000);
 }
 
 function clearJobStatus() {
