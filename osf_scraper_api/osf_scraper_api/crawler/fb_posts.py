@@ -8,7 +8,7 @@ import random
 from rq import get_current_job
 
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception, _log_image
-from osf_scraper_api.utilities.osf_helper import get_fb_scraper, wait_for_online
+from osf_scraper_api.utilities.osf_helper import get_fb_scraper, wait_for_online, check_online
 from osf_scraper_api.crawler.utils import get_posts_folder
 from osf_scraper_api.utilities.email_helper import send_email
 from osf_scraper_api.settings import SELENIUM_URL, DATA_DIR, ENV_DICT
@@ -83,6 +83,9 @@ def scrape_fb_posts(params, fb_scraper=None, num_attempts=0):
     scraper = OsfScraper(params, fb_scraper=fb_scraper)
     try:
         output = scraper.scrape_fb_posts()
+        is_online = check_online()
+        if not is_online:
+            raise Exception('++ disconnected from the internet')
         scraper.write_output(output)
         # if successful then set num to 0
         fb_scraper.num_initializations = 0

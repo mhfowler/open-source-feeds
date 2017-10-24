@@ -45,3 +45,21 @@ def wait_for_online():
             _log('++ waiting for internet connection')
             time.sleep(1)
     return True
+
+
+def check_online():
+    try:
+        response = requests.get("http://www.google.com")
+        if response.status_code == 200:
+            return True
+    except requests.ConnectionError:
+        pass
+    # second attempt
+    time.sleep(2)
+    try:
+        response = requests.get("http://www.google.com")
+        if response.status_code == 200:
+            return True
+        return False
+    except requests.ConnectionError:
+        return False
