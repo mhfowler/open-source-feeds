@@ -87,7 +87,6 @@ function testForDocker(nextStatus) {
         if (code === 0) {
             log(`++ setting status: ${nextStatus}`);
             setState({ status: nextStatus });
-            ensureDockerUp();
         } else if (code === 7) {
             setState({ status: 'noDocker' });
         } else {
@@ -151,9 +150,7 @@ function checkStageAndRestartFailedJobs() {
             if (!error && response.statusCode === 200) {
                 log('++ check stage request success');
             } else {
-                log('++ error in check stage request');
-                log(error);
-                log(JSON.stringify(response));
+                log('++ docker is currently down, but will attempt to restart within 5 minutes');
             }
         });
     }
