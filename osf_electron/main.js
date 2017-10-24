@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, powerSaveBlocker } = require('electron');
 const childProcess = require('child_process');
 const os = require('os');
 const path = require('path');
@@ -24,6 +24,7 @@ let tailCmdPid = null;
 let isDockerUp = false;
 let initiateJobInterval;
 let totalMem = 1;
+let powerSaveBlockerId;
 
 const homeDir = os.homedir();
 const logPath = `${homeDir}/Desktop/osf/data/log.txt`;
@@ -324,6 +325,16 @@ dockerUpPollFun = () => {
             ensureDockerDown();
         }
     });
+    // ensure computer doesn't go to sleep
+    if (!powerSaveBlockerId) {
+        // log('++ initializing psb');
+        powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
+    } else if (!powerSaveBlocker.isStarted(powerSaveBlockerId)) {
+        // log('++ re-initializing psb');
+        powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
+    } else {
+        // log('++ psb is running');
+    }
 };
 
 function generateFunction(event, argument) {
