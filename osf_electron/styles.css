@@ -1,6 +1,10 @@
 body {
-    margin: 3rem;
+    padding: 3rem;
     cursor: default;
+    -webkit-app-region: drag;
+}
+header {
+    -webkit-app-region: drag;
 }
 
 .osf-title {
@@ -42,4 +46,8 @@ body {
 }
 .state {
     display: none;
+}
+
+button {
+    -webkit-app-region: no-drag;
 }

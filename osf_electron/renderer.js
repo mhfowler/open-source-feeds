@@ -24,6 +24,7 @@ const buttons = {
     continue: document.getElementById('continue-button'),
     upload: document.getElementById('upload-button'),
     view: document.getElementById('view-button'),
+    view2: document.getElementById('view-button2'),
 };
 
 function setState(newState) {
@@ -53,6 +54,8 @@ function setState(newState) {
         $('.main-window').show();
         $('.optional').hide();
         $('.stop-button').hide();
+        $('.view-button').show();
+        $('.upload-button').hide();
         $('.finished').show();
         $('.debug').hide();
     } else if (state.status === 'uploading') {
@@ -138,6 +141,11 @@ buttons.upload.addEventListener('click', (event) => {
 });
 
 buttons.view.addEventListener('click', (event) => {
+    event.preventDefault();
+    ipcRenderer.send('view', {});
+});
+
+buttons.view2.addEventListener('click', (event) => {
     event.preventDefault();
     ipcRenderer.send('view', {});
 });
