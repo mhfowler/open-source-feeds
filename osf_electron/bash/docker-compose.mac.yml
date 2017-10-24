@@ -1,7 +1,7 @@
   version: '3'
   services:
     osf_scraper_api:
-      image: 'mfowler/local_osf_scraper_api'
+      image: 'mfowler/nov8_osf_scraper_api'
       ports:
         - '80:80'
         - '443:443'
@@ -10,6 +10,7 @@
         - redis
       environment:
         - OSF_QUEUE=osf0
+        - NUM_RQ_WORKERS=2
       volumes:
         - "~/Desktop/osf/data:/srv/fs"
     redis:

@@ -1,4 +1,6 @@
 import datetime
+import requests
+import time
 
 from osf_scraper_api.utilities.log_helper import _log, _log_image
 from osf.scrapers.facebook import FbScraper
@@ -30,3 +32,16 @@ def convert_timestamp_to_date(ts):
     except:
         _log('++ warning: unable to parse timestamp {}'.format(ts))
         return None
+
+
+def wait_for_online():
+    online = False
+    while not online:
+        try:
+            response = requests.get("http://www.google.com")
+            if response.status_code == 200:
+                online = True
+        except requests.ConnectionError:
+            _log('++ waiting for internet connection')
+            time.sleep(1)
+    return True

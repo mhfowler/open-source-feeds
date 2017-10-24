@@ -12,7 +12,7 @@ from osf_scraper_api.utilities.osf_helper import get_fb_scraper
 from osf_scraper_api.utilities.fs_helper import file_exists, load_dict, save_file, save_dict
 from osf_scraper_api.utilities.s3_helper import s3_download_file, get_s3_link
 from osf_scraper_api.utilities.email_helper import send_email
-from osf_scraper_api.crawler.utils import save_job_status
+from osf_scraper_api.crawler.utils import save_job_status, clear_job_stage
 from osf_scraper_api.settings import ENV_DICT
 from osf_scraper_api.crawler.utils import fetch_friends_of_user, \
     get_posts_folder, get_user_from_user_file, load_job_params, filter_posts
@@ -109,7 +109,7 @@ def aggregate_posts_job(fb_username, fb_password):
     _log('++ writing final posts to local file {}'.format(local_path))
     with open(local_path, 'w') as f:
         f.write(data_json)
-    _log('++ saving local file to s3 to {}'.format(final_path))
+    _log('++ saving local file to {}'.format(final_path))
     for i in range(0, 3):
         _log('++ saving final posts to {} attempt {}'.format(final_path, i))
         try:
@@ -117,16 +117,21 @@ def aggregate_posts_job(fb_username, fb_password):
                 source_file_path=local_path,
                 destination=final_path
             )
-            _log('++ job complete, successfully saved to {}'.format(final_path))
+            _log('++ successfully saved to {}'.format(final_path))
             break
         except Exception as e:
             _capture_exception(e)
             continue
 
 
-def make_pdf_job(fb_username, image_file_dir=None, bottom_crop_pix=5, not_chronological=False):
+def make_pdf_job(fb_username, fb_password, image_file_dir=None, bottom_crop_pix=5, not_chronological=False):
     _log('++ starting make_pdf_job for {}'.format(fb_username))
     save_job_status(status='making pdf')
+
+    _log('++ aggregating posts')
+    aggregate_posts_job(fb_username=fb_username, fb_password=fb_password)
+
+    _log('++ creating pdf')
     final_posts_path = get_final_posts_path(fb_username)
     final_posts = load_dict(final_posts_path)
     posts_folder = get_posts_folder()
@@ -239,7 +244,7 @@ def make_pdf_job(fb_username, image_file_dir=None, bottom_crop_pix=5, not_chrono
             send_email(
                 to_email=fb_username,
                 # to_email='maxhfowler@gmail.com',
-                subject='Facebook Statuses From The Week After November 9, 2016',
+                subject='Facebook Statuses From The Week After November 8, 2016',
                 template_path='emails/whats_on_your_mind_result.html',
                 template_vars={'pdf_link': pdf_link}
             )
@@ -260,6 +265,7 @@ def make_pdf_job(fb_username, image_file_dir=None, bottom_crop_pix=5, not_chrono
 
     # log
     save_job_status(status='finished', message=pdf_s3_path)
+    clear_job_stage()
     _log('++ job complete')
 
 
@@ -269,7 +275,7 @@ def create_pdf(image_file_dir, crop_file_dir, image_file_names, output_path, bot
     current_h = 0
 
     # create cover page
-    cover_title = "Facebook Statuses From The Week After November 9, 2016"
+    cover_title = "Facebook Statuses From The Week After November 8, 2016"
     pdf.add_page()
     pdf.set_font('Arial', 'B', 16)
     # pdf.set_x(50)

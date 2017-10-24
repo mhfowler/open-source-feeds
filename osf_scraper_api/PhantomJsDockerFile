@@ -28,6 +28,11 @@ RUN pip install awscli --upgrade
 # install supervisor
 RUN pip install supervisor==3.2
 
+# install phantomjs
+RUN curl -sL https://deb.nodesource.com/setup_7.x | bash -
+RUN apt-get install -y nodejs
+RUN npm -g install phantomjs-prebuilt
+
 # create user groups
 RUN groupadd webgroup
 RUN usermod -G webgroup root

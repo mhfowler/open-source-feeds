@@ -158,6 +158,7 @@ class FbScraper():
                  fb_password,
                  command_executor=None,
                  driver=None,
+                 which_driver=None,
                  log=None,
                  log_image=None,
                  proxy=None,
@@ -173,6 +174,9 @@ class FbScraper():
         self.num_initializations = 0
         self.command_executor = command_executor
         self.proxy = proxy
+        self.which_driver = which_driver
+        if not (which_driver or driver or command_executor):
+            self.which_driver = 'chrome'
         self.initialize_driver(driver=driver)
 
     def initialize_driver(self, driver=None):
@@ -186,8 +190,16 @@ class FbScraper():
                 desired_capabilities=chrome_options.to_capabilities()
             )
         else:
-            # chrome is default driver
-            if not driver:
+            if self.which_driver == 'phantomjs':
+                dcap = dict(DesiredCapabilities.PHANTOMJS)
+                dcap["phantomjs.page.settings.userAgent"] = (
+                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/53 "
+                    "(KHTML, like Gecko) Chrome/15.0.87"
+                )
+                driver = webdriver.PhantomJS(desired_capabilities=dcap)
+                driver.set_window_size(1400, 1000)
+                self.driver = driver
+            elif self.which_driver == 'chrome':
                 chrome_options = Options()
                 chrome_options.add_argument("--disable-notifications")
                 if self.proxy:
@@ -196,6 +208,8 @@ class FbScraper():
             # otherwise use the driver passed in
             else:
                 self.driver = driver
+        # set page load timeout
+        self.driver.set_page_load_timeout(time_to_wait=240)
 
     def re_initialize_driver(self):
         try:
@@ -286,13 +300,15 @@ class FbScraper():
         for i in range(0, 200):
             self.log('++ scrolling {}'.format(i))
             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(1)
+            time.sleep(1.5)
             friends = self.driver.find_elements_by_css_selector('.fsl a')
             num_friends = len(friends)
             if num_friends == prev_num_friends:
                 j += 1
+            else:
+                j = 0
             prev_num_friends = num_friends
-            if j > 5:
+            if j > 7:
                 break
 
         friends = self.driver.find_elements_by_css_selector('.fsl a')

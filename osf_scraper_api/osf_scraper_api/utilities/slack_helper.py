@@ -24,11 +24,15 @@ def list_channels():
 
 # construct a map from slack channel name to slack channel id (the format that the API expects)
 print '++ constructing slack channel map'
-channels = list_channels()
-channel_map = {}
-if channels:
-    for channel in channels['channels']:
-        channel_map[channel['name']] = channel['id']
+if ENV_DICT.get('LOG_TO_SLACK'):
+    channels = list_channels()
+    channel_map = {}
+    if channels:
+        for channel in channels['channels']:
+            channel_map[channel['name']] = channel['id']
+else:
+    channels = []
+    channel_map = {}
 
 
 def slack_notify_message(message, channel_name=None):

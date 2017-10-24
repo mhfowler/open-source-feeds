@@ -46,4 +46,4 @@ RUN pip install -r "${SRC_DIR}/osf_scraper_api/requirements.txt"
 EXPOSE 80 443
 
 # start app
-CMD (/usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf)
+CMD (supervisord -c /etc/supervisor/conf.d/supervisord.conf)

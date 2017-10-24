@@ -12,6 +12,7 @@ from rq import Worker, Queue, Connection, get_failed_queue
 from osf_scraper_api.settings import ENV_DICT
 from osf_scraper_api.utilities.log_helper import _capture_rq_exception, _log
 from osf_scraper_api.utilities.rq_helper import get_running_rq_jobs, get_osf_queue, restart_failed_jobs
+from osf_scraper_api.utilities.fs_helper import file_exists, save_dict, load_dict
 
 redis_connection = StrictRedis(
     host=ENV_DICT.get('REDIS_HOST'),
@@ -38,10 +39,10 @@ def retry_handler(job, exc_type, exc_value, traceback):
     # max_failures = job.meta.get('max_failures', default_max_failures)
     #
     # if failures >= max_failures:
-    #     _log('rq job %s: failed too many times times - moving to failed queue' % job.id)
+    #     _log('++ rq job {} {}: failed {} times - moving to failed queue'.format(job.func_name, job.id, str(failures)))
     #     return True
     #
-    # _log('rq job %s: failed %d times - retrying' % (job.id, failures))
+    # _log('++ immediately retrying job {} {}: failed {} times - retrying'.format(job.func_name, job.id, str(failures)))
     #
     # # there is a closure over queues so that we can specify them as command line arguments
     # for queue in queues:
@@ -72,35 +73,28 @@ if __name__ == '__main__':
         worker = Worker(queues)
         worker.push_exc_handler(retry_handler)
 
-        requeue_queue = get_osf_queue(queue_names[0])
-
-        if ENV_DICT.get('CLEAR_OLD_RQ_WORKERS'):
-            workers = Worker.all()
-            _log('++ clearing any inactive workers')
-            if not workers:
-                _log('++ no workers found')
-            else:
+        worker_num = os.environ.get('RQ_PROCESS_NUM')
+        if worker_num:
+            _log('++ worker_num: {}'.format(worker_num))
+            worker_id_path = 'workers/{}'.format(worker_num)
+            requeue_queue = get_osf_queue(queue_names[0])
+            # try to remove zombie worker
+            if file_exists(worker_id_path):
+                old_worker_dict = load_dict(worker_id_path)
+                old_worker_name = old_worker_dict['worker_name']
+                workers = Worker.all()
                 for w in workers:
-                    if w.state != 'busy':
-                        _log('++ stopping rq worker {}'.format(w.pid))
+                    if w.name == old_worker_name:
+                        _log('++ removing zombie worker: {}'.format(old_worker_name))
                         job = w.get_current_job()
                         if job is not None:
-                            _log('++ requeing zombie job {}'.format(job.id))
+                            _log('++ requeing job {}'.format(job.id))
                             job.ended_at = datetime.datetime.utcnow()
                             requeue_queue.enqueue_job(job)
                         w.register_death()
-
-            # clear all running jobs
-            for queue_name in queue_names:
-                running_jobs = get_running_rq_jobs(queue_name)
-                for job in running_jobs:
-                    _log('++ requeue running job {}'.format(job.id))
-                    job.ended_at = datetime.datetime.utcnow()
-                    requeue_queue.enqueue_job(job)
-
-        # restart failed jobs
-        if ENV_DICT.get('RESTART_FAILED_JOBS'):
-            restart_failed_jobs()
+            # save name of current worker
+            worker_dict = {'worker_name': worker.name}
+            save_dict(worker_dict, worker_id_path)
 
         from osf_scraper_api.web.app import create_app
         app = create_app()

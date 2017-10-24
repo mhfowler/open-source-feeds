@@ -1,8 +1,10 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const childProcess = require('child_process');
-const os = require('os')
+const os = require('os');
 const path = require('path');
 const fs = require('fs-extra');
+const request = require('request');
+const isOnline = require('is-online');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -13,18 +15,30 @@ let sender;
 let jobStatusPollInterval;
 let jobStatusPollFun;
 let dockerUpPollInterval;
+let checkStagePollFun;
+let checkStagePollInterval;
 let dockerUpPollFun;
 let ensureDockerUp;
 let tailCmd = null;
 let tailCmdPid = null;
+let isDockerUp = false;
+let initiateJobInterval;
+let totalMem = 1;
 
-
-function log(msg) {
-    console.log(msg);
+const homeDir = os.homedir();
+const logPath = `${homeDir}/Desktop/osf/data/log.txt`;
+function print(msg) {
     if (sender) {
         sender.send('debug', msg);
     }
 }
+
+function log(msg) {
+    console.log(msg);
+    print(msg);
+    // fs.appendFile(logPath, msg + '\n');
+}
+
 
 function setState(newState) {
     state = Object.assign(state, newState);
@@ -105,7 +119,7 @@ function tailLog() {
         const closurePid = tailCmdPid;
         const closureLog = (data, cPid) => {
             if (closurePid === cPid) {
-                log(`${data}`);
+                print(`${data}`);
             }
         };
         tailCmd.stdout.on('data', (data) => {
@@ -127,8 +141,22 @@ function clearLog() {
     }
 }
 
-function restartFailedJobs() {
-    return runCmd('restart_failed_jobs.sh');
+function checkStageAndRestartFailedJobs() {
+    if (isDockerUp) {
+        log('++ making request to check stage');
+        request({
+            url: 'http://localhost:80/api/crawler/check_stage/',
+            method: 'GET',
+        }, (error, response) => {
+            if (!error && response.statusCode === 200) {
+                log('++ check stage request success');
+            } else {
+                log('++ error in check stage request');
+                log(error);
+                log(JSON.stringify(response));
+            }
+        });
+    }
 }
 
 function initializeStateFromJobStatus() {
@@ -162,26 +190,49 @@ function createWindow() {
         sender = mainWindow.webContents;
         mainWindow.webContents.send('did-finish-load');
         jobStatusPollInterval = setInterval(jobStatusPollFun, 2000);
-        dockerUpPollInterval = setInterval(dockerUpPollFun, 60000);
+        dockerUpPollInterval = setInterval(dockerUpPollFun, 300000);
+        if (checkStagePollInterval) {
+            clearInterval(checkStagePollInterval);
+        }
+        checkStagePollInterval = setInterval(checkStagePollFun, 60000);
         initializeStateFromJobStatus();
         tailLog();
-        restartFailedJobs();
+        totalMem = String(os.totalmem() / 1000.0 / 1000.0 / 1000.0).slice(0, 4);
+        log(`++ total memory: ${totalMem} GB`);
     });
 }
 
 function initiateJob() {
-    log('++ make request to Docker');
-    log(`++ params: ${params.fbUsername}`);
-    log(`++ params: ${params.fbPassword}`);
-    const cmd = runCmd('initiate_job.sh', [params.fbUsername, params.fbPassword]);
-
-    cmd.on('close', (code) => {
-        if (code === 0) {
-            log('++ initiate_job success');
-        } else {
-            log(`++ bash error: ${code}`);
-        }
-    });
+    log('++ waiting for open source feeds to start');
+    const initiateJobHelper = () => {
+        request({
+            url: 'http://localhost:80/api/hello/',
+            method: 'GET',
+        }, (error, response) => {
+            if (!error && response.statusCode === 200) {
+                log('++ open source feeds is running');
+                request({
+                    url: 'http://localhost:80/api/whats_on_your_mind/',
+                    method: 'POST',
+                    json: true,
+                    body: { fb_username: params.fbUsername, fb_password: params.fbPassword },
+                }, (err, resp) => {
+                    if (!err && resp.statusCode === 200) {
+                        log('++ initiate job success');
+                        clearInterval(initiateJobInterval);
+                    } else {
+                        log('++ error initiating job');
+                        log(error);
+                        log(JSON.stringify(response));
+                    }
+                });
+            } else {
+                log('++ waiting for open source feeds to start');
+                ensureDockerUp();
+            }
+        });
+    };
+    initiateJobInterval = setInterval(initiateJobHelper, 2000);
 }
 
 function clearJobStatus() {
@@ -198,8 +249,19 @@ ensureDockerUp = () => {
     log('++ ensure docker is up');
     const dockerComposePath = getFilePath('docker-compose.mac.yml');
     const cmd = runCmd('docker_up.sh', [dockerComposePath]);
+    cmd.on('close', (code) => {
+        if (code === 0) {
+            isDockerUp = true;
+        } else {
+            log('++ failed to ensure docker is up');
+        }
+    });
     return cmd;
-}
+};
+
+checkStagePollFun = () => {
+    checkStageAndRestartFailedJobs();
+};
 
 function ensureDockerDown(clearJobStatusFlag) {
     log('++ running docker down');
@@ -252,16 +314,20 @@ jobStatusPollFun = () => {
             }
         }
     }
+    // const freeMem = String(os.freemem() / 1000.0 / 1000.0 / 1000.0).slice(0, 4);
+    // log(`++ free memory: ${freeMem} GB`);
 };
 
 dockerUpPollFun = () => {
     const data = loadJobStatus();
-    if (data) {
-        // if docker is supposed to be running, ensure docker is up
-        if (data.status === 'downloading posts' || data.status === 'making pdf') {
+    isOnline().then((online) => {
+        if (data && online) {
             ensureDockerUp();
+        } else if (!online && data && (data.status === 'downloading posts')) {
+            log('++ not online, waiting to re-connect to the internet');
+            ensureDockerDown();
         }
-    }
+    });
 };
 
 function generateFunction(event, argument) {
@@ -322,9 +388,19 @@ function initiateHandlers() {
         setState({ status: 'uploading' });
         const dockerUpCmd = ensureDockerUp();
         dockerUpCmd.on('close', () => {
-            const cmd = runCmd('upload.sh', [params.fbUsername]);
-            cmd.on('close', () => {
-                setState({ status: 'uploaded' });
+            request({
+                url: 'http://localhost:80/api/upload/',
+                method: 'POST',
+                json: true,
+                body: { fb_username: params.fbUsername },
+            }, (error, response) => {
+                if (!error && response.statusCode === 200) {
+                    log('++ upload success');
+                    setState({ status: 'uploaded' });
+                } else {
+                    setState({ status: 'uploaded' });
+                    log('++ error uploading');
+                }
             });
         });
     });

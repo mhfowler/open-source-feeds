@@ -8,13 +8,17 @@ from redis import Redis
 from rq.registry import StartedJobRegistry
 
 from osf_scraper_api.settings import ENV_DICT, DEFAULT_JOB_TIMEOUT
-from osf_scraper_api.utilities.log_helper import _log
+from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 
 
 def enqueue_job(*args, **kwargs):
-    fb_username = kwargs['fb_username']
+    fb_username = kwargs.get('fb_username')
+    if fb_username:
+        queue = get_queue_for_user(fb_username)
+    else:
+        queue_name = ENV_DICT['QUEUE_NAMES'][0]
+        queue = get_osf_queue(queue_name)
     job_fun = args[0]
-    queue = get_queue_for_user(fb_username)
     return queue.enqueue(job_fun, **kwargs)
 
 
@@ -61,11 +65,18 @@ def get_running_rq_jobs(queue_name):
     return jobs
 
 
+def get_failed_jobs():
+    failed_queue = get_osf_queue('failed')
+    failed_jobs = failed_queue.jobs
+    return failed_jobs
+
+
 def get_rq_jobs(queue_name):
     osf_queue = get_osf_queue(queue_name)
     queue_jobs = osf_queue.jobs
     running_jobs = get_running_rq_jobs(queue_name)
-    all_jobs = queue_jobs + running_jobs
+    failed_jobs = get_failed_jobs()
+    all_jobs = queue_jobs + running_jobs + failed_jobs
     return all_jobs
 
 
@@ -121,9 +132,29 @@ def restart_failed_jobs():
     failed_queue = get_osf_queue('failed')
     new_queue = get_osf_queue(ENV_DICT['QUEUE_NAMES'][0])
     failed_jobs = failed_queue.get_jobs()
+    _log('++ restarting any failed jobs')
     for job in failed_jobs:
-        _log('++ requeueing failed job: {}'.format(job.id))
-        new_queue.enqueue_job(job)
+        try:
+            job.refresh()
+            failures = job.meta.get('failures', 0) + 1
+            max_failures = 5
+            if failures >= max_failures:
+                _log('++ rq job {func_name} {job_id}: failed too many times times ({num_failures}), deleting'.format(
+                    func_name=job.func_name,
+                    job_id=str(job.id),
+                    num_failures=str(failures)
+                ))
+                job.delete()
+                continue
+            else:
+                _log('++ requeueing failed job: {} {}, attempt {}'.format(job.func_name, str(job.id), str(failures)))
+                job.meta['failures'] = failures
+                job.save()
+                failed_queue.remove(job)
+                new_queue.enqueue_job(job)
+        except Exception as e:
+            _capture_exception(e)
+            pass
 
 
 if __name__ == '__main__':

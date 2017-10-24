@@ -97,7 +97,7 @@ ipcRenderer.on('debug', (event, msg) => {
         const firstChild = debug.find(':last-child');
         firstChild.remove();
     }
-    $('.uploading').html(`++ uploading ${Date.now()}`);
+    $('.uploading').html(`++ uploading (usually takes 2-3 minutes) ${Date.now()}`);
 });
 
 ipcRenderer.on('processing-did-fail', (event, error) => {
