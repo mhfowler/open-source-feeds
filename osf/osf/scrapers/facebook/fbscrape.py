@@ -511,6 +511,10 @@ class FbScraper():
         for post_link, post in posts.items():
             to_return.append(post)
 
+        # add the page this was scraped from to each post
+        for post in to_return:
+            post['page'] = user
+
         # if there is before_date, then filter the posts
         if before_date:
             to_return = filter(lambda post: post['date'] <= before_timestamp, to_return)

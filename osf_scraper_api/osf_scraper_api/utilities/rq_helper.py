@@ -80,6 +80,15 @@ def get_rq_jobs(queue_name):
     return all_jobs
 
 
+def get_all_rq_jobs():
+    queue_names = ENV_DICT['QUEUE_NAMES']
+    all_jobs = []
+    for queue_name in queue_names:
+        jobs = get_rq_jobs(queue_name)
+        all_jobs += jobs
+    return all_jobs
+
+
 def str_to_probability(in_str):
     """Return a reproducible uniformly random float in the interval [0, 1) for the given seed."""
     return random.Random(in_str).randint(0, len(ENV_DICT['QUEUE_NAMES']))

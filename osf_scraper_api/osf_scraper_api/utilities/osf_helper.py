@@ -2,7 +2,10 @@ import datetime
 import requests
 import time
 
+from flask import g
+
 from osf_scraper_api.utilities.log_helper import _log, _log_image
+from osf_scraper_api.utilities.fs_helper import save_dict, load_dict, file_exists
 from osf.scrapers.facebook import FbScraper
 from osf_scraper_api.settings import SELENIUM_URL, ENV_DICT
 
@@ -63,3 +66,26 @@ def check_online():
         return False
     except requests.ConnectionError:
         return False
+
+
+def save_last_uptime(uptime):
+    output_key = 'uptime.json'
+    save_dict({
+        'uptime': uptime
+    }, output_key)
+
+
+def load_last_uptime():
+    try:
+        if g.last_uptime:
+            return g.last_uptime
+    except:
+        pass
+    output_key = 'uptime.json'
+    if file_exists(output_key):
+        data_dict = load_dict(output_key)
+        return data_dict['uptime']
+    else:
+        now = int(time.time())
+        save_last_uptime(now)
+        return now

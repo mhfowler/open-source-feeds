@@ -7,11 +7,11 @@ from osf_scraper_api.api.facebook import get_facebook_blueprint
 from osf_scraper_api.api.utils import get_utils_blueprint
 from osf_scraper_api.api.helper import get_helpers_blueprint
 from osf_scraper_api.crawler.crawler_api import get_crawler_blueprint
-from osf_scraper_api.crawler.utils import save_last_uptime
 from osf_scraper_api.crawler.test_errors import get_test_errors_blueprint
+from osf_scraper_api.electron.electron_api import get_electron_api_blueprint
 from osf_scraper_api.utilities.rq_helper import get_queue_map
-from osf_scraper_api.utilities.email_helper import send_email
-from osf_scraper_api.settings import PROJECT_PATH, TEMPLATE_DIR, ENV_DICT, DEFAULT_JOB_TIMEOUT
+from osf_scraper_api.utilities.osf_helper import save_last_uptime
+from osf_scraper_api.settings import PROJECT_PATH, TEMPLATE_DIR, ENV_DICT
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.web.extensions import sentry, mail
 
@@ -65,6 +65,7 @@ def create_app():
     app.register_blueprint(get_facebook_blueprint(queue_map))
     app.register_blueprint(get_utils_blueprint(queue_map))
     app.register_blueprint(get_crawler_blueprint(queue_map))
+    app.register_blueprint(get_electron_api_blueprint())
     app.register_blueprint(get_test_errors_blueprint())
     app.register_blueprint(rq_dashboard.blueprint, url_prefix='/rq')
 

@@ -11,7 +11,7 @@ from osf_scraper_api.crawler.fb_posts import scrape_fb_posts_job, fb_posts_post_
 from osf_scraper_api.crawler.screenshot import screenshot_user_job, screenshot_multi_user_job, screenshots_post_process
 from osf_scraper_api.crawler.utils import fetch_friends_of_user
 from osf_scraper_api.crawler.utils import get_unprocessed_friends
-from osf_scraper_api.crawler.utils import get_user_posts_file, save_job_params, load_last_uptime
+from osf_scraper_api.crawler.utils import get_user_posts_file, save_job_params
 from osf_scraper_api.crawler.make_pdf import make_pdf_job, aggregate_posts_job
 from osf_scraper_api.crawler.whats_on_your_mind import whats_on_your_mind_job
 from osf_scraper_api.crawler.fb_friends import crawler_scrape_fb_friends
@@ -19,7 +19,7 @@ from osf_scraper_api.settings import TEMPLATE_DIR
 from osf_scraper_api.utilities.fs_helper import file_exists, list_files_in_folder
 from osf_scraper_api.utilities.s3_helper import s3_upload_folder
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
-from osf_scraper_api.utilities.osf_helper import paginate_list, get_fb_scraper
+from osf_scraper_api.utilities.osf_helper import paginate_list, get_fb_scraper, load_last_uptime
 from osf_scraper_api.crawler.test_job import test_job
 from osf_scraper_api.crawler.utils  import save_job_status, save_job_stage, load_job_stage
 from osf_scraper_api.utilities.rq_helper import enqueue_job, stop_jobs, restart_failed_jobs
@@ -282,13 +282,6 @@ def get_crawler_blueprint(osf_queue):
     @crawler_blueprint.route('/api/stop/', methods=['POST'])
     def stop_jobs_endpoint():
         stop_jobs()
-        return make_response(jsonify({
-            'message': 'ok'
-        }), 200)
-
-    @crawler_blueprint.route('/api/restart_failed_jobs/', methods=['GET'])
-    def restart_failed_jobs_endpoint():
-        restart_failed_jobs()
         return make_response(jsonify({
             'message': 'ok'
         }), 200)
