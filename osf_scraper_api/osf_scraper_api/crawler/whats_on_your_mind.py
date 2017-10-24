@@ -24,6 +24,7 @@ def whats_on_your_mind_job(fb_username, fb_password):
         headers = {'content-type': 'application/json'}
         save_job_status(status='downloading posts')
         requests.post(url, data=json.dumps(job_params), headers=headers)
+        fb_scraper.quit_driver()
     except Exception as e:
         _log('++ /api/whats_on_your_mind/ failed to login')
         save_job_status(status='login failed')

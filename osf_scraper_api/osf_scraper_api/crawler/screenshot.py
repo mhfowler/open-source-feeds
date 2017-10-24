@@ -11,7 +11,7 @@ from rq import get_current_job
 
 from osf_scraper_api.utilities.fs_helper import load_dict
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
-from osf_scraper_api.utilities.osf_helper import get_fb_scraper, paginate_list
+from osf_scraper_api.utilities.osf_helper import get_fb_scraper, paginate_list, wait_for_online
 from osf_scraper_api.utilities.fs_helper import file_exists
 from osf_scraper_api.utilities.fs_helper import save_file
 from osf_scraper_api.settings import ENV_DICT, NUMBER_OF_SCREENSHOT_SWEEPS
@@ -71,6 +71,7 @@ def screenshot_post(post, fb_scraper):
         fb_scraper.num_initializations = 0
     except Exception as e:
         _log('++ encountered error: {}'.format(str(e)))
+        wait_for_online()
         if fb_scraper.num_initializations < 3:
             _log('++ retrying attempt {}'.format(fb_scraper.num_initializations))
             fb_scraper.re_initialize_driver()

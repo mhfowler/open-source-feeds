@@ -3,7 +3,7 @@ import json
 
 from osf_scraper_api.settings import ENV_DICT
 from osf_scraper_api.utilities.log_helper import _log, _log_image
-from osf_scraper_api.utilities.osf_helper import get_fb_scraper
+from osf_scraper_api.utilities.osf_helper import get_fb_scraper, wait_for_online
 from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
 
 
@@ -25,6 +25,7 @@ def scrape_fb_friends_helper(fb_scraper, key_name, user):
 
 def crawler_scrape_fb_friends(users, fb_username, fb_password, no_skip=False, post_process=False):
     _log('++ starting fb_friends job')
+    wait_for_online()
     fb_scraper = get_fb_scraper(fb_username=fb_username, fb_password=fb_password)
     fb_scraper.fb_login()
 

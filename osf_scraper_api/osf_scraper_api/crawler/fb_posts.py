@@ -8,7 +8,7 @@ import random
 from rq import get_current_job
 
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception, _log_image
-from osf_scraper_api.utilities.osf_helper import get_fb_scraper
+from osf_scraper_api.utilities.osf_helper import get_fb_scraper, wait_for_online
 from osf_scraper_api.crawler.utils import get_posts_folder
 from osf_scraper_api.utilities.email_helper import send_email
 from osf_scraper_api.settings import SELENIUM_URL, DATA_DIR, ENV_DICT
@@ -88,6 +88,7 @@ def scrape_fb_posts(params, fb_scraper=None, num_attempts=0):
         fb_scraper.num_initializations = 0
     except Exception as e:
         _log('++ encountered error {}'.format(str(e)))
+        wait_for_online()
         if num_attempts == 0:
             restart_selenium()
             fb_scraper.re_initialize_driver()

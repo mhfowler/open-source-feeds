@@ -208,6 +208,8 @@ class FbScraper():
             # otherwise use the driver passed in
             else:
                 self.driver = driver
+        # set page load timeout
+        self.driver.set_page_load_timeout(time_to_wait=240)
 
     def re_initialize_driver(self):
         try:
