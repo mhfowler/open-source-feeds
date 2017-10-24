@@ -175,7 +175,7 @@ function initializeStateFromJobStatus() {
 
 function createWindow() {
     log('++ create window');
-    mainWindow = new BrowserWindow({ width: 720, height: 480, titleBarStyle: 'hidden' });
+    mainWindow = new BrowserWindow({ width: 720, height: 480, titleBarStyle: 'hidden', frame: false });
     mainWindow.loadURL(`file://${__dirname}/index.html`);
     mainWindow.on('closed', () => {
         // Dereference the window object, usually you would store windows
@@ -195,7 +195,6 @@ function createWindow() {
         initializeStateFromJobStatus();
         tailLog();
         totalMem = String(os.totalmem() / 1000.0 / 1000.0 / 1000.0).slice(0, 4);
-        log(`++ total memory: ${totalMem} GB`);
     });
 }
 

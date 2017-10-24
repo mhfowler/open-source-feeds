@@ -62,11 +62,18 @@
                     <p>
                         Your PDF is finished and is on your desktop.
                     </p>
-                    <div>
-                        If you would like to contribute your downloaded posts to our archive of Facebook
-                        statuses click the button below (your password will still not be shared).
-                    </div>
-                    <button id="upload-button" class="button osf-button upload-button" type="submit">Upload Posts</button>
+                    <p>
+                        If you would like to share any of the statuses that you find
+                        to include in What's On Your Mind?
+                        please submit them through this <a target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLSfARAFAX6rSgrOg_ktmprkvtHi8MXKWZY5cZSrcm-579AqQZQ/viewform">form</a>.
+                    </p>
+                    <button id="view-button" class="button osf-button view-button" type="submit">View PDF</button>
+                    <!--<div>-->
+                        <!--If you would like to send us the .json data files of the downloaded posts,-->
+                        <!--click the button below-->
+                        <!--(your login information will still not be shared).-->
+                    <!--</div>-->
+                    <button id="upload-button" class="button osf-button upload-button" type="submit">Upload JSON</button>
                     <div class="uploading optional">
                         ++ uploading
                     </div>
@@ -75,7 +82,7 @@
                     <p>
                         Your statuses have been uploaded, thank you.
                     </p>
-                     <button id="view-button" class="button osf-button view-button" type="submit">View PDF</button>
+                     <button id="view-button2" class="button osf-button view-button" type="submit">View PDF</button>
                 </div>
                 <div class="loading-message optional"></div>
                 <div class="error-alert optional">
@@ -105,9 +112,14 @@
                 To protect your privacy, this program runs locally on your laptop, your username and password are only sent to Facebook.
             </div>
         </div>
-        <div class="row login-failed optional">
+        <div class="row login-failed optional" style="margin-top:20px;">
             <div class="medium-12 columns">
-                Failed to login to Facebook, try again with a different username and password.
+                <p>
+                    Failed to login to Facebook, try again with a different username and password.
+                </p>
+                <p>
+                    Or if you have 2FA enabled, you will need to temporarily turn off 2FA to use the scraper.
+                </p>
             </div>
         </div>
     </form>
