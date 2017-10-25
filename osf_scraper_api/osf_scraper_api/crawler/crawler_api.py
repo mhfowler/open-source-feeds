@@ -22,7 +22,7 @@ from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.utilities.osf_helper import paginate_list, get_fb_scraper
 from osf_scraper_api.crawler.test_job import test_job
 from osf_scraper_api.crawler.utils  import save_job_status, save_job_stage, load_job_stage
-from osf_scraper_api.utilities.rq_helper import enqueue_job, stop_jobs, restart_failed_jobs
+from osf_scraper_api.utilities.rq_helper import enqueue_job, stop_jobs, restart_failed_jobs, get_all_rq_jobs
 from osf_scraper_api.settings import ENV_DICT, NUMBER_OF_POST_SWEEPS
 
 
@@ -32,6 +32,14 @@ def get_crawler_blueprint(osf_queue):
     @crawler_blueprint.route('/api/whats_on_your_mind/', methods=['POST'])
     def whats_on_your_mind_endpoint():
         _log('++ new request to /api/whats_on_your_mind/')
+        all_jobs = get_all_rq_jobs()
+        if len(all_jobs):
+            _log('++ osf is running')
+            return make_response(jsonify({
+                'message': "already initialized"
+            }), 200)
+
+        _log('++ initializing')
         save_job_status(status='initializing')
         params = request.get_json()
         required_fields = [
@@ -48,7 +56,7 @@ def get_crawler_blueprint(osf_queue):
         save_job_params(fb_username, params)
         enqueue_job(whats_on_your_mind_job, fb_username=fb_username, fb_password=fb_password)
         return make_response(jsonify({
-            'message': "Thanks, we'll send an email to {} in 1-2 days when your PDF is finished.".format(fb_username)
+            'message': "initialized"
         }), 200)
 
     @crawler_blueprint.route('/api/crawler/fb_friends/', methods=['POST'])

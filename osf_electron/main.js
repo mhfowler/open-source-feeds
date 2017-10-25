@@ -221,8 +221,8 @@ function initiateJob() {
                     body: { fb_username: params.fbUsername, fb_password: params.fbPassword },
                 }, (err, resp) => {
                     if (!err && resp.statusCode === 200) {
-                        log('++ initiate job success');
                         clearInterval(initiateJobInterval);
+                        log('++ initiate job success');
                     } else {
                         log('++ retrying initiate job');
                         log(error);
@@ -234,7 +234,12 @@ function initiateJob() {
             }
         });
     };
-    initiateJobInterval = setInterval(initiateJobHelper, 3000);
+    // clear any extant interval, and start new one
+    if (initiateJobInterval) {
+        clearInterval(initiateJobInterval);
+    }
+    initiateJobHelper();
+    initiateJobInterval = setInterval(initiateJobHelper, 10000);
 }
 
 function clearJobStatus() {
