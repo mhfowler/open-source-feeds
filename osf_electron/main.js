@@ -202,11 +202,17 @@ function createWindow() {
 function initiateJob() {
     log('++ waiting for open source feeds to start');
     const initiateJobHelper = () => {
+        const requestTime = new Date().getTime() / 1000;
         request({
             url: 'http://localhost:80/api/hello/',
             method: 'GET',
+            timeout: 1000,
         }, (error, response) => {
-            if (!error && response.statusCode === 200) {
+            const now = new Date().getTime() / 1000;
+            // check for timeout
+            if ((now - requestTime) > 1) {
+                log('++ waiting for open source feeds to start (timeout)');
+            } else if (!error && response.statusCode === 200) {
                 log('++ open source feeds is running');
                 request({
                     url: 'http://localhost:80/api/whats_on_your_mind/',
@@ -218,18 +224,17 @@ function initiateJob() {
                         log('++ initiate job success');
                         clearInterval(initiateJobInterval);
                     } else {
-                        log('++ error initiating job');
+                        log('++ retrying initiate job');
                         log(error);
                         log(JSON.stringify(response));
                     }
                 });
             } else {
                 log('++ waiting for open source feeds to start');
-                ensureDockerUp();
             }
         });
     };
-    initiateJobInterval = setInterval(initiateJobHelper, 2000);
+    initiateJobInterval = setInterval(initiateJobHelper, 3000);
 }
 
 function clearJobStatus() {
@@ -365,7 +370,8 @@ function generateFunction(event, argument) {
             log('++ start_docker failure');
             setState({ status: 'noDocker' });
         } else {
-            log(`++ bash error: ${code}`);
+            log('++ retrying initiate job');
+            generateFunction(event, argument);
         }
     });
 }
