@@ -9,7 +9,7 @@ from osf_scraper_api.settings import ENV_DICT
 def restart_selenium():
     host_ip_address = ENV_DICT.get("HOST_IP_ADDRESS")
     if not host_ip_address:
-        _log('++ HOST_SSH_COMMAND not set, not restarting selenium')
+        # _log('++ HOST_SSH_COMMAND not set, not restarting selenium')
         return
     else:
         _log('++ restarting selenium on host {}'.format(host_ip_address))
