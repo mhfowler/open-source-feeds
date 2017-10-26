@@ -45,6 +45,10 @@ DATA_DIR = os.path.join(PROJECT_PATH, 'data')
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
+if ENV_DICT.get('FS_BASE_PATH'):
+    if not os.path.exists(ENV_DICT.get('FS_BASE_PATH')):
+        os.makedirs(ENV_DICT.get('FS_BASE_PATH'))
+
 # settings
 SELENIUM_URL = ENV_DICT.get('SELENIUM_URL')
 print 'SELENIUM_URL: {}'.format(SELENIUM_URL)

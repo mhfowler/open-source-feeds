@@ -32,4 +32,10 @@ def get_utils_blueprint(osf_queue):
             'message': 'ok'
         }), 200)
 
+    @utils_blueprint.route('/api/is_up/', methods=['GET'])
+    def is_up_endpoint():
+        return make_response(jsonify({
+            'status': 'running'
+        }), 200)
+
     return utils_blueprint

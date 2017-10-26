@@ -29,9 +29,9 @@ def scrape_fb_friends(fb_username, fb_password):
     user = fb_scraper.get_currently_logged_in_user()
 
     key_name = 'friends/{}.json'.format(user)
-    if file_exists(key_name):
-        _log('++ skipping {}'.format(key_name))
-        return
+    # if file_exists(key_name):
+    #     _log('++ skipping {}'.format(key_name))
+    #     return
 
     # otherwise scrape and then save
     output_dict1 = scrape_fb_friends_helper(fb_scraper=fb_scraper, key_name=key_name, user=user)

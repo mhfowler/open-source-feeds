@@ -14,11 +14,12 @@ from osf_scraper_api.utilities.rq_helper import enqueue_job, restart_failed_jobs
 from osf_scraper_api.settings import NUMBER_OF_POST_SWEEPS
 
 
-def get_electron_blueprint():
+def get_electron_api_blueprint():
     electron_blueprint = Blueprint('electron_blueprint', __name__, template_folder=TEMPLATE_DIR)
 
     @electron_blueprint.route('/api/electron/fb_friends/', methods=['POST'])
     def fb_friends_endpoint():
+        _log('++ received request to friends endpoint')
         params = request.get_json()
 
         required_fields = [
@@ -40,6 +41,7 @@ def get_electron_blueprint():
 
     @electron_blueprint.route('/api/electron/fb_posts/', methods=['POST'])
     def fb_posts_endpoint():
+        _log('++ received request to posts endpoint')
         params = request.get_json()
 
         required_fields = [
@@ -83,6 +85,7 @@ def get_electron_blueprint():
 
     @electron_blueprint.route('/api/electron/check_pipeline/', methods=['GET'])
     def check_job_stage_endpoint():
+        _log('++ received request to pipeline endpoint')
         pipeline_dict = load_current_pipeline()
         if not pipeline_dict:
             _log('++ no pipeline found')
