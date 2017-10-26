@@ -37,6 +37,18 @@ def convert_timestamp_to_date(ts):
         return None
 
 
+def convert_js_date_to_datetime(moment):
+    date_str = moment['_d']
+    if '+' in date_str:
+        splitted = date_str.split('+')
+        date_str = splitted[0]
+    try:
+        date = datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+    except ValueError:
+        date = datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
+    return date
+
+
 def wait_for_online():
     online = False
     while not online:

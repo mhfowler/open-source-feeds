@@ -14,19 +14,20 @@ from osf_scraper_api.utilities.selenium_helper import restart_selenium
 from osf_scraper_api.utilities.rq_helper import get_all_rq_jobs
 
 
-def scrape_fb_posts_job(users, params, fb_username, fb_password):
+def scrape_fb_posts_job(users, output_folder, scraper_params, fb_username, fb_password):
     _log('++ starting scrape_fb_posts_job')
     fb_scraper = get_fb_scraper(fb_username=fb_username, fb_password=fb_password)
     num_users = len(users)
     for index, user in enumerate(users):
         try:
-            user_posts_file = get_user_posts_file(user)
-            if file_exists(user_posts_file):
+            f_name = '{}.json'.format(user)
+            output_path = os.path.join(output_folder, f_name)
+            if file_exists(output_path):
                 _log('++ skipping {}'.format(user))
                 continue
-            params['users'] = [user]
+            scraper_params['users'] = [user]
             _log('++ scraping fb_posts for user {} [{}/{}]'.format(user, index, num_users))
-            scrape_fb_posts(params, fb_scraper=fb_scraper)
+            output = scrape_fb_posts(scraper_params, output_path=output_path, fb_scraper=fb_scraper)
             fb_scraper.num_initializations = 0
         except Exception as e:
             _capture_exception(e)
@@ -57,14 +58,14 @@ def fb_posts_post_process():
         _log('++ found {} pending jobs, continuing fb posts pipeline'.format(len(pending)))
 
 
-def scrape_fb_posts(params, fb_scraper=None, num_attempts=0):
+def scrape_fb_posts(params, output_path, fb_scraper=None, num_attempts=0):
     scraper = OsfScraper(params, fb_scraper=fb_scraper)
     try:
         output = scraper.scrape_fb_posts()
         is_online = check_online()
         if not is_online:
             raise Exception('++ disconnected from the internet')
-        scraper.write_output(output)
+        save_dict(output, output_path)
         # if successful then set num to 0
         fb_scraper.num_initializations = 0
     except Exception as e:
@@ -104,16 +105,7 @@ class OsfScraper:
             self.fb_scraper.quit_driver()
 
     def write_output(self, output):
-        # save the output to the fs
-        if not self.replace:
-            # TODO: assert output_folder does not exist or is a folder
-            output_folder = self.params['output_folder']
-            f_name = '{}.json'.format(self.time)
-            f_path = '{}/{}'.format(output_folder, f_name)
-        # otherwise, its a replace
-        else:
-            # TODO: assert output_path does not exist or is a file
-            f_path = self.params.get('output_path')
+        f_path = self.params.get('output_path')
         _log('++ saving results to: {}'.format(f_path))
         save_dict(data_dict=output, destination=f_path)
         # other forms of optional output

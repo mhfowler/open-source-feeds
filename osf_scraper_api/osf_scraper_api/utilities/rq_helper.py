@@ -124,17 +124,10 @@ def clear_old_workers():
 
 
 def stop_jobs():
-    queue_map = get_queue_map()
-    for queue_name, queue in queue_map.items():
-        _log('++ clearing queue: {}'.format(queue_name))
-        queue.empty()
-    _log('++ clearing failed queue')
-    failed = get_osf_queue(queue_name='failed')
-    failed.empty()
-    conn = get_redis_connection()
-    for w in Worker.all(conn):
-        _log('++ stopping rq worker {}'.format(w.pid))
-        w.register_death()
+    # TODO: figure out how to stop running jobs
+    jobs = get_all_rq_jobs()
+    for job in jobs:
+        job.delete()
 
 
 def restart_failed_jobs():

@@ -41,7 +41,7 @@ def scrape_fb_friends(fb_username, fb_password):
     friends = friends1.union(friends2)
     _log('++ saving {} friends'.format(len(friends)))
     output_dict = {user: list(friends)}
-    save_dict(output_dict, key_name)
+    output_path = save_dict(output_dict, key_name)
     _log('++ data saved to {}'.format(key_name))
     try:
         fb_scraper.quit_driver()
@@ -51,5 +51,6 @@ def scrape_fb_friends(fb_username, fb_password):
     _log('++ fb_friends pipeline complete')
     save_current_pipeline(
         pipeline_name='fb_friends',
-        pipeline_status='finished'
+        pipeline_status='finished',
+        pipeline_message=output_path
     )

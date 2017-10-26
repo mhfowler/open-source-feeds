@@ -82,12 +82,20 @@ def get_screenshot_output_key_from_post(post):
     return output_key
 
 
-def save_current_pipeline(pipeline_name, pipeline_status):
+def save_current_pipeline(pipeline_name, pipeline_status, pipeline_params={}, pipeline_message=None):
     output_key = 'pipeline.json'
     data_dict = {
         'pipeline_name': pipeline_name,
-        'pipeline_status': pipeline_status
+        'pipeline_status': pipeline_status,
+        'pipeline_message': pipeline_message,
+        'pipeline_params': pipeline_params,
     }
+    save_dict(data_dict=data_dict, destination=output_key)
+
+
+def clear_pipeline():
+    output_key = 'pipeline.json'
+    data_dict = {}
     save_dict(data_dict=data_dict, destination=output_key)
 
 

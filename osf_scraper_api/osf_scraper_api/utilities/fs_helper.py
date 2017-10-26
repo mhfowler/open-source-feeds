@@ -14,7 +14,7 @@ def save_dict(data_dict, destination):
         with open(f_path, 'w') as f:
             f.write(contents)
         # save file
-        save_file(source_file_path=f_path, destination=destination)
+        return save_file(source_file_path=f_path, destination=destination)
     finally:
         os.unlink(f_path)
 

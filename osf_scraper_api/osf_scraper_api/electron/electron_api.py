@@ -9,13 +9,26 @@ from osf_scraper_api.electron.make_pdf import make_pdf_job
 from osf_scraper_api.electron.fb_friends import scrape_fb_friends
 from osf_scraper_api.settings import TEMPLATE_DIR
 from osf_scraper_api.utilities.log_helper import _log
-from osf_scraper_api.utilities.osf_helper import paginate_list, load_last_uptime
-from osf_scraper_api.utilities.rq_helper import enqueue_job, restart_failed_jobs
+from osf_scraper_api.utilities.osf_helper import paginate_list, load_last_uptime, convert_js_date_to_datetime
+from osf_scraper_api.utilities.rq_helper import enqueue_job, restart_failed_jobs, stop_jobs
 from osf_scraper_api.settings import NUMBER_OF_POST_SWEEPS
 
 
 def get_electron_api_blueprint():
     electron_blueprint = Blueprint('electron_blueprint', __name__, template_folder=TEMPLATE_DIR)
+
+    @electron_blueprint.route('/api/electron/stop/', methods=['GET'])
+    def stop_jobs_endpoint():
+        stop_jobs()
+        _log('++ successful request to stop current pipeline')
+        current_pipeline = load_current_pipeline()
+        save_current_pipeline(
+            pipeline_name=current_pipeline.get('pipeline_name'),
+            pipeline_status='stopped'
+        )
+        return make_response(jsonify({
+            'message': 'ok'
+        }), 200)
 
     @electron_blueprint.route('/api/electron/fb_friends/', methods=['POST'])
     def fb_friends_endpoint():
@@ -30,6 +43,11 @@ def get_electron_api_blueprint():
             if req_field not in params.keys():
                 abort(make_response(jsonify({'message': '{} field is required.'.format(req_field)}), 422))
 
+        save_current_pipeline(
+            pipeline_name='fb_friends',
+            pipeline_status='running',
+            pipeline_params={'fb_username': params['fb_username']}
+        )
         enqueue_job(scrape_fb_friends,
             fb_username=params['fb_username'],
             fb_password=params['fb_password'],
@@ -53,7 +71,32 @@ def get_electron_api_blueprint():
             if req_field not in params.keys():
                 abort(make_response(jsonify({'message': '{} field is required.'.format(req_field)}), 422))
 
-        users = params['users']
+        output_folder = '/Users/maxfowler/Desktop/osf/data/posts'
+
+        before_date = params.get('before_date')
+        if before_date:
+            before_dt = convert_js_date_to_datetime(before_date)
+            before_timestamp = time.mktime(before_dt.timetuple())
+        else:
+            before_timestamp = None
+
+        after_date = params.get('after_date')
+        if after_date:
+            after_dt = convert_js_date_to_datetime(after_date)
+            after_timestamp = time.mktime(after_dt.timetuple())
+        else:
+            after_timestamp = None
+
+        scraper_params = {
+            'after_timestamp': after_timestamp,
+            'before_timestamp': before_timestamp,
+            'jump_to_timestamp': before_timestamp # jump to the latest date to save time
+        }
+
+        users = params.get('users')
+        if not users:
+            users = ['maxhfowler']
+
         page_size = 50
         pages = paginate_list(mylist=users, page_size=page_size)
         job_ids = []
@@ -67,16 +110,20 @@ def get_electron_api_blueprint():
                 _log('++ enqueing {} job'.format(index))
                 job = enqueue_job(scrape_fb_posts_job,
                     users=page,
-                    params=params,
+                    scraper_params=scraper_params,
+                    output_folder=output_folder,
                     fb_username=params['fb_username'],
                     fb_password=params['fb_password'],
                     timeout=5000
                 )
                 job_ids.append(job.id)
         # save which job_ids are in this stage
+        pipeline_params = scraper_params
+        pipeline_params['output_folder'] = output_folder
         save_current_pipeline(
             pipeline_name='fb_posts',
-            pipeline_status='running'
+            pipeline_status='running',
+            pipeline_params=pipeline_params
         )
         # finally return 'OK' response
         return make_response(jsonify({
