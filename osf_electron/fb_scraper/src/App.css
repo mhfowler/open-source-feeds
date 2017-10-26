@@ -1,0 +1,56 @@
+
+
+.navbar {
+    margin-bottom: 30px;
+}
+
+button.navbutton {
+    margin-right: 20px;
+}
+
+.navtoggle {
+    width: 30px;
+    height: 30px;
+    background-color:black;
+    margin-bottom: 5px;
+    display: none;
+}
+.navtoggle:hover {
+    cursor:pointer;
+}
+
+.log {
+    margin-top: 30px;
+    width: 100%;
+}
+
+.body-container {
+    max-width: 800px;
+    margin: auto;
+}
+
+.osf-running {
+    color: green;
+}
+.osf-not-running {
+    color: red;
+}
+.osf-starting {
+    color: blue;
+}
+.osf-shutting-down {
+    color: blue;
+}
+
+.navlinks {
+    display:flex;
+}
+.navlink {
+    margin-right: 10px;
+}
+.navlink:hover {
+    cursor:pointer;
+}
+.navlink.selected {
+    color: blue;
+}
