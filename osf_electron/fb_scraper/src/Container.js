@@ -6,6 +6,7 @@ import Settings from './Settings'
 import Home from './Home'
 import PipelineRunning from './PipelineRunning'
 import PipelineFinished from './PipelineFinished'
+import NotImplemented from './NotImplemented'
 import PipelineStopped from './PipelineStopped'
 import NavLink from './shared/NavLink'
 import 'react-datepicker/dist/react-datepicker.css'
@@ -41,7 +42,11 @@ class Container extends Component {
     };
 
     setElectronState = (newState) => {
-        ipcRenderer.send('react-set-electron-state', newState);
+        let electronState = this.state.electronState;
+        const newElectronState = Object.assign(electronState, newState);
+        this.setState({
+            electronState: newElectronState
+        }, () => ipcRenderer.send('react-set-electron-state', newState));
     };
 
     componentDidUpdate = (prevProps, prevState) => {
@@ -115,9 +120,9 @@ class Container extends Component {
             <div className="navbar">
                 <div className="row">
                     <div className="medium-12 columns navlinks">
-                        <NavLink path='/settings' title='Settings'/>
                         <NavLink path='/fb' title='Facebook'/>
                         <NavLink path='/instagram' title='Instagram'/>
+                        <NavLink path='/settings' title='Settings'/>
                     </div>
                 </div>
                 <Route path="/fb" render={(props) => (<FacebookNavLinks {...childrenProps} {...props} />)}/>
@@ -126,6 +131,7 @@ class Container extends Component {
           <div className="body-wrapper">
               <Route path="/" exact render={(props) => (<Home {...childrenProps} {...props} />)}/>
               <Route path="/fb" render={(props) => (<FacebookScraper {...childrenProps} {...props} />)}/>
+              <Route path="/instagram" render={(props) => (<NotImplemented/>)}/>
               <Route path="/settings" exact render={(props) => (<Settings {...childrenProps} {...props} />)}/>
               <Route path="/pipeline-running" exact render={(props) => (<PipelineRunning {...childrenProps} {...props} />)}/>
               <Route path="/pipeline-stopped" exact render={(props) => (<PipelineStopped {...childrenProps} {...props} />)}/>

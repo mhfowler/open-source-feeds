@@ -9,7 +9,7 @@ from osf_scraper_api.utilities.osf_helper import get_fb_scraper, wait_for_online
 from osf_scraper_api.utilities.email_helper import send_email
 from osf_scraper_api.settings import DATA_DIR
 from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
-from osf_scraper_api.electron.utils import get_user_posts_file, save_current_pipeline
+from osf_scraper_api.electron.utils import save_current_pipeline, load_current_pipeline
 from osf_scraper_api.utilities.selenium_helper import restart_selenium
 from osf_scraper_api.utilities.rq_helper import get_all_rq_jobs
 
@@ -50,9 +50,13 @@ def fb_posts_post_process():
     # if no jobs found, then pipeline is complete
     if len(pending) == 0:
         _log('++ scrape fb posts pipeline finished')
+        finished_pipeline = load_current_pipeline()
+        pipeline_params = finished_pipeline['pipeline_params']
         save_current_pipeline(
             pipeline_name='fb_posts',
-            pipeline_status='finished'
+            pipeline_status='finished',
+            pipeline_params=finished_pipeline['pipeline_params'],
+            pipeline_message=pipeline_params['output_folder']
         )
     else:
         _log('++ found {} pending jobs, continuing fb posts pipeline'.format(len(pending)))

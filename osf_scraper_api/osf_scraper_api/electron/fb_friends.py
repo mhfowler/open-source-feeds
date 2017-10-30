@@ -35,10 +35,10 @@ def scrape_fb_friends(fb_username, fb_password):
 
     # otherwise scrape and then save
     output_dict1 = scrape_fb_friends_helper(fb_scraper=fb_scraper, key_name=key_name, user=user)
-    output_dict2 = scrape_fb_friends_helper(fb_scraper=fb_scraper, key_name=key_name, user=user)
-    friends1 = set(output_dict1[user])
-    friends2 = set(output_dict2[user])
-    friends = friends1.union(friends2)
+    # output_dict2 = scrape_fb_friends_helper(fb_scraper=fb_scraper, key_name=key_name, user=user)
+    friends = set(output_dict1[user])
+    # friends2 = set(output_dict2[user])
+    # friends = friends1.union(friends2)
     _log('++ saving {} friends'.format(len(friends)))
     output_dict = {user: list(friends)}
     output_path = save_dict(output_dict, key_name)
@@ -47,6 +47,8 @@ def scrape_fb_friends(fb_username, fb_password):
         fb_scraper.quit_driver()
     except:
         pass
+    # copy data to friends/current.json
+    save_dict(output_dict, 'friends/current.json')
 
     _log('++ fb_friends pipeline complete')
     save_current_pipeline(

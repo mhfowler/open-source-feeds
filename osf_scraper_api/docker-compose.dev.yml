@@ -31,7 +31,7 @@
     osf_cron:
       image: 'mfowler/local_osf_cron'
       environment:
-        - API_DOMAIN=http://localhost:80
+        - API_DOMAIN=docker.for.mac.localhost:5002
       build:
         dockerfile: CronDockerfile
         context: .

@@ -7,26 +7,26 @@ const electron = window.require('electron');
 const ipcRenderer  = electron.ipcRenderer;
 
 
-const FbLogin = (props) => {
+const InstagramLogin = (props) => {
     return (
           <div className="row">
                     <div className="medium-12 columns">
                         <label>
-                            FB Username
+                            Instagram Username
                             <span className="input-group">
                             <input
-                                value={props.fbUsername}
-                                onChange={props.setFbUsername}
-                                className="input-group-field" type="text" name="fb-username" placeholder="username@gmail.com"/>
+                                value={props.instagramUsername}
+                                onChange={props.setInstagramUsername}
+                                className="input-group-field" type="text" name="instagram-username" placeholder="username@gmail.com"/>
                         </span>
                         </label>
                         <label>
-                            FB Password
+                            Instagram Password
                             <span className="input-group">
                             <input
-                                value={props.fbPassword}
-                                onChange={props.setFbPassword}
-                                className="input-group-field" type="password" name="fb-password" placeholder="password"/>
+                                value={props.instagramPassword}
+                                onChange={props.setInstagramPassword}
+                                className="input-group-field" type="password" name="instagram-password" placeholder="password"/>
                         </span>
                         </label>
                     </div>
@@ -35,15 +35,15 @@ const FbLogin = (props) => {
 };
 
 
-class FacebookFriendsScraper extends Component {
+class InstagramFriendsScraper extends Component {
 
     state = {
-        fbUsername: '',
-        fbPassword: ''
+        instagramUsername: '',
+        instagramPassword: ''
     };
 
     componentDidMount = () => {
-      ipcRenderer.send('get-fb-friends', {});
+      ipcRenderer.send('get-instagram-friends', {});
     };
 
     handleClickFetchFriends = () => {
@@ -52,27 +52,27 @@ class FacebookFriendsScraper extends Component {
             pipelineStatus: 'running'
         });
         this.props.history.push('/pipeline-running');
-        ipcRenderer.send('fetch-friends', {fbUsername: this.state.fbUsername, fbPassword: this.state.fbPassword});
+        ipcRenderer.send('fetch-friends', {instagramUsername: this.state.instagramUsername, instagramPassword: this.state.instagramPassword});
     };
 
     render = () => {
 
         let numFriends = 0;
         let isLoaded = false;
-        if (this.props.electronState && this.props.electronState.fbFriendsRequest && this.props.electronState.fbFriendsRequest.loaded) {
-            numFriends = this.props.electronState.fbFriendsRequest.friends.length;
+        if (this.props.electronState && this.props.electronState.instagramFriendsRequest && this.props.electronState.instagramFriendsRequest.loaded) {
+            numFriends = this.props.electronState.instagramFriendsRequest.friends.length;
             isLoaded = true;
         }
 
         return (
-            <div className='fb-friends-scraper'>
+            <div className='instagram-friends-scraper'>
                 <Loader loaded={isLoaded}>
                     <div className="fadein">
-                        <FbLogin
-                            fbUsername={this.state.fbUsername}
-                            fbPassword={this.state.fbPassword}
-                            setFbUsername={(ev) => this.setState({fbUsername: ev.target.value})}
-                            setFbPassword={(ev) => this.setState({fbPassword: ev.target.value})}
+                        <InstagramLogin
+                            instagramUsername={this.state.instagramUsername}
+                            instagramPassword={this.state.instagramPassword}
+                            setInstagramUsername={(ev) => this.setState({instagramUsername: ev.target.value})}
+                            setInstagramPassword={(ev) => this.setState({instagramPassword: ev.target.value})}
                         />
                          <div className="row">
                             <div className="medium-12 columns">
@@ -91,11 +91,11 @@ class FacebookFriendsScraper extends Component {
     }
 }
 
-class FacebookPostsScraper extends Component {
+class InstagramPostsScraper extends Component {
 
     state = {
-        fbUsername: '',
-        fbPassword: '',
+        instagramUsername: '',
+        instagramPassword: '',
         afterDate: null,
         beforeDate: null,
         showAdvanced: false,
@@ -107,7 +107,7 @@ class FacebookPostsScraper extends Component {
     };
 
     componentDidMount = () => {
-      ipcRenderer.send('get-fb-friends', {});
+      ipcRenderer.send('get-instagram-friends', {});
     };
 
     handleClickFetchPosts = () => {
@@ -118,8 +118,8 @@ class FacebookPostsScraper extends Component {
         this.props.history.push('/pipeline-running');
         let selectedFriends = Array.from(this.selectedFriends);
         ipcRenderer.send('fetch-posts', {
-            fbUsername: this.state.fbUsername,
-            fbPassword: this.state.fbPassword,
+            instagramUsername: this.state.instagramUsername,
+            instagramPassword: this.state.instagramPassword,
             afterDate: this.state.afterDate,
             beforeDate: this.state.beforeDate,
             whichPagesSetting: this.state.whichPagesSetting,
@@ -158,11 +158,11 @@ class FacebookPostsScraper extends Component {
                     </div>
                 </div>
             </div>
-            <FbLogin
-                fbUsername={this.state.fbUsername}
-                fbPassword={this.state.fbPassword}
-                setFbUsername={(ev) => this.setState({fbUsername: ev.target.value})}
-                setFbPassword={(ev) => this.setState({fbPassword: ev.target.value})}
+            <InstagramLogin
+                instagramUsername={this.state.instagramUsername}
+                instagramPassword={this.state.instagramPassword}
+                setInstagramUsername={(ev) => this.setState({instagramUsername: ev.target.value})}
+                setInstagramPassword={(ev) => this.setState({instagramPassword: ev.target.value})}
             />
             <div className="row">
                 <div className="medium-12 columns">
@@ -224,7 +224,7 @@ class FacebookPostsScraper extends Component {
                             Manually Select Friends
                         </strong>
                         <div className="medium-12 columns friends-list">
-                            {this.props.electronState.fbFriendsRequest.friends.map((friend) => {
+                            {this.props.electronState.instagramFriendsRequest.friends.map((friend) => {
                                 return (
                                     <div className="select-friend">
                                         <input
@@ -257,8 +257,8 @@ class FacebookPostsScraper extends Component {
 
         let numFriends = 0;
         let isLoaded = false;
-        if (this.props.electronState && this.props.electronState.fbFriendsRequest && this.props.electronState.fbFriendsRequest.loaded) {
-            numFriends = this.props.electronState.fbFriendsRequest.friends.length;
+        if (this.props.electronState && this.props.electronState.instagramFriendsRequest && this.props.electronState.instagramFriendsRequest.loaded) {
+            numFriends = this.props.electronState.instagramFriendsRequest.friends.length;
             isLoaded = true;
         }
         let numPagesToScrape = 0;
@@ -270,7 +270,7 @@ class FacebookPostsScraper extends Component {
         }
 
         return (
-            <div className="fb-posts-scraper">
+            <div className="instagram-posts-scraper">
                 <Loader loaded={isLoaded}>
                     {numFriends === 0
                         ?   <div className="row">
@@ -287,11 +287,11 @@ class FacebookPostsScraper extends Component {
 }
 
 
-class FacebookScraper extends Component {
+class InstagramScraper extends Component {
 
     state = {
-        fbUsername: '',
-        fbPassword: ''
+        instagramUsername: '',
+        instagramPassword: ''
     };
 
     componentDidMount = () => {
@@ -300,16 +300,16 @@ class FacebookScraper extends Component {
 
     render = () => {
         return (
-            <div className="facebook-scraper">
-                <Route path="/fb/friends" exact render={(routerProps) => (<FacebookFriendsScraper handleClickFetchFriends={this.handleClickFetchFriends} {...this.props} {...routerProps} />)}/>
-                <Route path="/fb/posts" exact render={(routerProps) => (<FacebookPostsScraper handleClickFetchPosts={this.handleClickFetchPosts} {...this.props} {...routerProps} />)}/>
+            <div className="instagram-scraper">
+                <Route path="/instagram/friends" exact render={(routerProps) => (<InstagramFriendsScraper handleClickFetchFriends={this.handleClickFetchFriends} {...this.props} {...routerProps} />)}/>
+                <Route path="/instagram/posts" exact render={(routerProps) => (<InstagramPostsScraper handleClickFetchPosts={this.handleClickFetchPosts} {...this.props} {...routerProps} />)}/>
             </div>
         );
     }
 }
 
-FacebookScraper.propTypes = {
+InstagramScraper.propTypes = {
     log: PropTypes.func
 };
 
-export default FacebookScraper;
+export default InstagramScraper;

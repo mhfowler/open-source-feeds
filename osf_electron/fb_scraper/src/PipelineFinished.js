@@ -12,7 +12,10 @@ class PipelineFinished extends Component {
                                 pipeline finished: {this.props.electronState.pipelineName}
                            </p>
                            <p>
-                               Your data is stored in {this.props.electronState.pipelineMessage}
+                               Your data is stored in
+                               <p>
+                                <code>{this.props.electronState.pipelineMessage}</code>
+                               </p>
                            </p>
                        </div>
                 </div>

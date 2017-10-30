@@ -82,6 +82,18 @@ def get_screenshot_output_key_from_post(post):
     return output_key
 
 
+def get_current_friends():
+    key_name = 'friends/current.json'
+    if not file_exists(key_name):
+        return []
+    friends_dict = load_dict(key_name)
+    friends = []
+    for k, v in friends_dict.items():
+        friends = friends + v
+    friends.sort()
+    return friends
+
+
 def save_current_pipeline(pipeline_name, pipeline_status, pipeline_params={}, pipeline_message=None):
     output_key = 'pipeline.json'
     data_dict = {

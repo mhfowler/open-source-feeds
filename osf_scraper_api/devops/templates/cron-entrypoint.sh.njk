@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+printenv > /etc/environment
+cron
+touch /srv/log/cron.log
+tail -F /srv/log/cron.log

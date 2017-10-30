@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import Log from './Log'
-import API from './helpers/API'
 
 const electron = window.require('electron');
 const ipcRenderer  = electron.ipcRenderer;

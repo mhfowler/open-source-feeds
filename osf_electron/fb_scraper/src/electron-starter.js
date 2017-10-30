@@ -28,6 +28,7 @@ let ensureDockerUp;
 let tailCmd = null;
 let tailCmdPid = null;
 const homeDir = os.homedir();
+const pipelinePath = `${homeDir}/Desktop/osf/data/pipeline.json`;
 let electronState = {
     mainWindowLoaded: false,
     electronInitialized: false,
@@ -92,10 +93,16 @@ function testForDocker(nextStatus) {
     });
 }
 
+function clearPipelineState() {
+   log('++ clearing old pipeline state');
+   if (fs.existsSync(pipelinePath)) {
+       fs.unlink(pipelinePath);
+   }
+}
+
 function loadPipelineState() {
-    const dataPath = `${homeDir}/Desktop/osf/data/pipeline.json`;
-    if (fs.existsSync(dataPath)) {
-        const contents = fs.readFileSync(dataPath);
+    if (fs.existsSync(pipelinePath)) {
+        const contents = fs.readFileSync(pipelinePath);
         const data = JSON.parse(contents);
         let pipelineRunning;
         if (data.pipeline_status === 'running') {
@@ -244,11 +251,13 @@ async function fetchFriends(fbUsername, fbPassword) {
 }
 ipcMain.on('fetch-friends', function (event, args) {
     log('++ making request to fetch friends');
+    clearPipelineState();
     setElectronState({pipelineRunning: true});
     fetchFriends(args.fbUsername, args.fbPassword);
 });
 
-async function fetchPosts(fbUsername, fbPassword, afterDate, beforeDate) {
+async function fetchPosts(params) {
+    const {fbUsername, fbPassword, afterDate, beforeDate, whichPagesSetting, selectedFriends} = params;
     try {
         fetch(`${API_DOMAIN}/api/electron/fb_posts/`, {
             method: 'POST',
@@ -261,7 +270,8 @@ async function fetchPosts(fbUsername, fbPassword, afterDate, beforeDate) {
                 fb_password: fbPassword,
                 after_date: afterDate,
                 before_date: beforeDate,
-                users: []
+                selected_friends: selectedFriends,
+                which_pages_setting: whichPagesSetting,
             }),
         });
     } catch (err) {
@@ -270,8 +280,16 @@ async function fetchPosts(fbUsername, fbPassword, afterDate, beforeDate) {
 }
 ipcMain.on('fetch-posts', function (event, args) {
     log('++ making request to fetch friends');
+    clearPipelineState();
     setElectronState({pipelineRunning: true});
-    fetchPosts(args.fbUsername, args.fbPassword, args.afterDate, args.beforeDate);
+    fetchPosts({
+        fbUsername: args.fbUsername,
+        fbPassword: args.fbPassword,
+        afterDate: args.afterDate,
+        beforeDate: args.beforeDate,
+        whichPagesSetting: args.whichPagesSetting,
+        selectedFriends: args.selectedFriends
+    });
 });
 
 async function stopPipeline() {
@@ -286,6 +304,29 @@ async function stopPipeline() {
 ipcMain.on('stop-pipeline', function (event, args) {
     log('++ making request to stop current pipeline');
     stopPipeline();
+});
+
+async function getFacebookFriends() {
+    try {
+        const resp = await fetch(`${API_DOMAIN}/api/electron/fb_friends/`, {
+            method: 'GET',
+        });
+        const data = await resp.json();
+        setTimeout(() => {
+            setElectronState({
+               fbFriendsRequest: {
+                   loaded: true,
+                   friends: data.friends
+               }
+            });
+        }, 200)
+
+    } catch (err) {
+    }
+}
+ipcMain.on('get-fb-friends', function (event, args) {
+    log('++ making request to get facebook friends');
+    getFacebookFriends()
 });
 
 function initializeElectron() {

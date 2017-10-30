@@ -1,17 +1,19 @@
 import time
+import os
 
 from flask import make_response, jsonify, Blueprint, request, abort
 
 from osf_scraper_api.electron.fb_posts import scrape_fb_posts_job, fb_posts_post_process
+from osf_scraper_api.utilities.fs_helper import load_dict, file_exists
 from osf_scraper_api.electron.screenshot import screenshot_job, screenshots_post_process
-from osf_scraper_api.electron.utils import save_current_pipeline, load_current_pipeline
+from osf_scraper_api.electron.utils import save_current_pipeline, load_current_pipeline, get_current_friends
 from osf_scraper_api.electron.make_pdf import make_pdf_job
 from osf_scraper_api.electron.fb_friends import scrape_fb_friends
 from osf_scraper_api.settings import TEMPLATE_DIR
 from osf_scraper_api.utilities.log_helper import _log
 from osf_scraper_api.utilities.osf_helper import paginate_list, load_last_uptime, convert_js_date_to_datetime
 from osf_scraper_api.utilities.rq_helper import enqueue_job, restart_failed_jobs, stop_jobs
-from osf_scraper_api.settings import NUMBER_OF_POST_SWEEPS
+from osf_scraper_api.settings import NUMBER_OF_POST_SWEEPS, MIN_TIME_TO_PIPELINE_CHECK
 
 
 def get_electron_api_blueprint():
@@ -63,15 +65,26 @@ def get_electron_api_blueprint():
         params = request.get_json()
 
         required_fields = [
-            'users',
             'fb_username',
             'fb_password',
+            'selected_friends'
         ]
         for req_field in required_fields:
             if req_field not in params.keys():
                 abort(make_response(jsonify({'message': '{} field is required.'.format(req_field)}), 422))
 
-        output_folder = '/Users/maxfowler/Desktop/osf/data/posts'
+        which_pages_setting = params.get('which_pages_setting')
+        selected_friends = params.get('selected_friends')
+        if which_pages_setting == 'all':
+            users = get_current_friends()
+        else:
+            users = selected_friends
+
+        base_output_folder = '/Users/maxfowler/Desktop/osf/data/posts'
+        now = str(int(time.time()))
+        output_folder = os.path.join(base_output_folder, now)
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
 
         before_date = params.get('before_date')
         if before_date:
@@ -92,10 +105,6 @@ def get_electron_api_blueprint():
             'before_timestamp': before_timestamp,
             'jump_to_timestamp': before_timestamp # jump to the latest date to save time
         }
-
-        users = params.get('users')
-        if not users:
-            users = ['maxhfowler']
 
         page_size = 50
         pages = paginate_list(mylist=users, page_size=page_size)
@@ -146,18 +155,20 @@ def get_electron_api_blueprint():
         last_uptime = load_last_uptime()
         now = int(time.time())
         total_uptime_seconds = now - last_uptime
-        if (total_uptime_seconds < 60*3):
+        if (total_uptime_seconds < MIN_TIME_TO_PIPELINE_CHECK):
             _log('++ skipping pipeline check due to recent restart')
             return make_response(jsonify({
                 'message': 'ok'
             }), 200)
         _log('++ checking whether pipeline is complete')
-        if pipeline_name == 'posts':
+        if pipeline_name == 'fb_posts':
             _log('++ checking whether posts pipeline is complete')
             fb_posts_post_process()
-        elif pipeline_name == 'screenshots':
+        elif pipeline_name == 'fb_screenshots':
             _log('++ checking whether screenshots pipeline is complete')
             screenshots_post_process()
+        elif pipeline_name in ['fb_friends']:
+            pass
         else:
             raise Exception('++ invalid pipeline: {}'.format(pipeline_name))
         return make_response(jsonify({
@@ -194,5 +205,13 @@ def get_electron_api_blueprint():
         return make_response(jsonify({
             'message': 'pdf job enqueued'
         }), 200)
+
+    @electron_blueprint.route('/api/electron/fb_friends/', methods=['GET'])
+    def get_fb_friends_endpoint():
+        friends = get_current_friends()
+        to_return = {
+            'friends': friends
+        }
+        return make_response(jsonify(to_return), 200)
 
     return electron_blueprint

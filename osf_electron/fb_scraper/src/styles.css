@@ -51,3 +51,7 @@ header {
 button {
     -webkit-app-region: no-drag;
 }
+
+code {
+    -webkit-app-region: no-drag;
+}

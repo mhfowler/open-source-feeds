@@ -25,4 +25,8 @@
         - "4444:4444"
       volumes:
         - "/dev/shm:/dev/shm"
+    osf_cron:
+      image: 'mfowler/local_osf_cron'
+      environment:
+        - API_DOMAIN=http://localhost:80
 
