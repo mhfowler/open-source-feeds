@@ -1,6 +1,8 @@
 import random
 import tempfile
+import datetime
 import os
+import time
 
 from fpdf import FPDF
 from PIL import Image
@@ -11,18 +13,21 @@ from osf_scraper_api.utilities.s3_helper import s3_download_file
 from osf_scraper_api.electron.utils import save_current_pipeline
 from osf_scraper_api.settings import ENV_DICT
 from osf_scraper_api.electron.utils import fetch_friends_of_user, \
-    get_posts_folder, get_user_from_user_file
+    get_posts_folder, get_user_from_user_file, get_screenshot_output_key_from_post, convert_to_host_path
 
 
-def make_pdf_job(posts_file, image_file_dir=None, bottom_crop_pix=5):
-    _log('++ starting make_pdf job for {}'.format(posts_file))
+def make_pdf_job(posts, image_file_dir=None, chronological=False, bottom_crop_pix=5):
+    _log('++ starting make_pdf job')
     save_current_pipeline(
         pipeline_name='make_pdf',
-        pipeline_status='processing'
+        pipeline_status='running'
     )
 
-    # loading posts
-    final_posts = load_dict(posts_file)
+    # variable rename
+    final_posts = posts
+
+    if chronological:
+        final_posts.sort(key=lambda post: post['date'])
 
     # finally make the pdf
     _log('++ making pdf with {} posts'.format(len(final_posts)))
@@ -35,13 +40,7 @@ def make_pdf_job(posts_file, image_file_dir=None, bottom_crop_pix=5):
     # different ways of specifying image_file_dir
     using_temp_directory = False
     if not image_file_dir:
-        if ENV_DICT.get('IMAGE_FILE_DIR'):
-            image_file_dir = ENV_DICT.get('IMAGE_FILE_DIR')
-            _log('++ using image_file_dir from environ {}'.format(image_file_dir))
-        else:
-            using_temp_directory = True
-            image_file_dir = tempfile.mkdtemp(prefix=downloads_directory)
-            _log('++ creating temp directory {}'.format(image_file_dir))
+        image_file_dir = os.path.join(ENV_DICT['FS_BASE_PATH'], 'screenshots')
     else:
         _log('++ using image_file_dir from kwarg {}'.format(image_file_dir))
 
@@ -73,11 +72,10 @@ def make_pdf_job(posts_file, image_file_dir=None, bottom_crop_pix=5):
     else:
         _log('++ pulling images directly from /srv/fs/screenshots')
         for index, post in enumerate(final_posts):
-            screenshot_path = post['screenshot_path']
-            local_name = screenshot_path.replace(posts_folder, '')
-            local_name = local_name.replace('screenshots/', '')
+            screenshot_path = get_screenshot_output_key_from_post(post)
+            dir_path, local_name = os.path.split(screenshot_path)
             post['image_file_name'] = local_name
-            post['local_path'] = os.path.join(image_file_dir, local_name)
+            post['local_path'] = os.path.join(image_file_dir, screenshot_path)
 
     # create pdf
     image_file_names = [p['image_file_name'] for p in final_posts]
@@ -94,10 +92,77 @@ def make_pdf_job(posts_file, image_file_dir=None, bottom_crop_pix=5):
     )
 
     # output pdf
+    output_path = 'pdfs/osf-{}.pdf'.format(str(int(time.time())))
     _log('++ saving pdf to {}'.format(output_path))
     save_file(source_file_path=pdf_path, destination=output_path)
 
+    docker_path = os.path.join(ENV_DICT['FS_BASE_PATH'], output_path)
+    host_output_path = convert_to_host_path(docker_path)
+    save_current_pipeline(
+        pipeline_name='make_pdf',
+        pipeline_status='finished',
+        pipeline_message=host_output_path
+    )
     _log('++ job complete')
+
+
+def make_text_pdf_job(posts, chronological=False):
+    _log('++ starting make_text_pdf job')
+    save_current_pipeline(
+        pipeline_name='make_pdf',
+        pipeline_status='running'
+    )
+    f_name = 'osf-{}.txt'.format(str(int(time.time())))
+    output_folder = os.path.join(ENV_DICT['FS_BASE_PATH'], 'output')
+    output_path = os.path.join(output_folder, f_name)
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    if chronological:
+        posts.sort(key=lambda post: post['date'])
+
+    text_string = ''
+    for index, post in enumerate(posts):
+        content = post['content']
+        author = content.get('author')
+        if not author:
+            author = 'unknown'
+        date = post['date']
+        dt = datetime.datetime.fromtimestamp(date)
+        time_string = dt.strftime('%b %d, %Y')
+        text_string += 'author: {}'.format(author)
+        text_string += '\n{}'.format(time_string)
+        text = content.get('text')
+        if text:
+            if text.endswith('See More'):
+                text = text[:-8]
+            text = text.rstrip()
+        if text:
+            text_string += '\n' + text
+        if content.get('link'):
+            text_string += '\n{}'.format(content['link'])
+        if content.get('images'):
+            for img in content.get('images'):
+                img_string = '[img]: {}'.format(img)
+                text_string += '\n' + img_string
+        text_string += '\n\n\n\n'
+        if not index % 10:
+            _log('++ {}/{}'.format(index, len(posts)))
+
+    # output .txt
+    _log('++ saving .txt to {}'.format(output_path))
+    with open(output_path, 'w') as f:
+        f.write(text_string.encode('utf8'))
+
+    docker_path = os.path.join(ENV_DICT['FS_BASE_PATH'], output_path)
+    host_output_path = convert_to_host_path(docker_path)
+    save_current_pipeline(
+        pipeline_name='make_pdf',
+        pipeline_status='finished',
+        pipeline_message=host_output_path
+    )
+    _log('++ job complete')
+
 
 
 def create_pdf(image_file_dir, crop_file_dir, image_file_names, output_path, bottom_crop_pix=5):
@@ -125,7 +190,7 @@ def create_pdf(image_file_dir, crop_file_dir, image_file_names, output_path, bot
         try:
             im = Image.open(local_path)
             # crop some pixels off image
-            crop_pix = 10
+            crop_pix = 17
             im = im.crop(
                 (
                     crop_pix+1,
@@ -165,10 +230,12 @@ def create_pdf(image_file_dir, crop_file_dir, image_file_names, output_path, bot
                 w = im.width
                 max_height = page_h - 100
                 max_width = pdf.w - 150
+                height_ratio = im.height / max_height
+                width_ratio = im.width / max_width
                 if current_h + h + 50 > (page_h - 50):
                     pdf.add_page()
                     current_h = 0
-                if im.height > max_height:
+                if height_ratio > width_ratio:
                     ratio = max_height / im.height
                     h = im.height * ratio
                     w = im.width * ratio

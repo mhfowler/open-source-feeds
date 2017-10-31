@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import DatePicker from 'react-datepicker'
 import Loader from 'react-loader'
+import FbLogin from './FbLogin.jsx';
 const electron = window.require('electron');
 const ipcRenderer  = electron.ipcRenderer;
 

@@ -379,6 +379,40 @@ ipcMain.on('fetch-posts', function (event, args) {
     });
 });
 
+async function generatePDF(params) {
+    const {fbUsername, fbPassword, inputDatas, screenshotPosts, chronological} = params;
+    try {
+        fetch(`${API_DOMAIN}/api/electron/pdf/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                fb_username: fbUsername,
+                fb_password: fbPassword,
+                input_datas: inputDatas,
+                screenshot_posts: screenshotPosts,
+                chronological: chronological,
+            }),
+        });
+    } catch (err) {
+        log(err.message);
+    }
+}
+ipcMain.on('generate-pdf', function (event, args) {
+    log('++ making request to generate pdf');
+    clearPipelineState();
+    setElectronState({pipelineRunning: true, pipelineStatus: 'running'});
+    generatePDF({
+        fbUsername: args.fbUsername,
+        fbPassword: args.fbPassword,
+        inputDatas: args.inputDatas,
+        screenshotPosts: args.screenshotPosts,
+        chronological: args.chronological,
+    });
+});
+
 async function stopPipeline() {
     try {
         await fetch(`${API_DOMAIN}/api/electron/stop/`, {

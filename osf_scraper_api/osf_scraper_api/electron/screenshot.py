@@ -1,7 +1,9 @@
 import tempfile
 import os
+import json
 
 from osf_scraper_api.utilities.fs_helper import load_dict
+from osf_scraper_api.electron.make_pdf import make_pdf_job
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.utilities.osf_helper import get_fb_scraper, paginate_list, wait_for_online
 from osf_scraper_api.utilities.fs_helper import file_exists
@@ -14,7 +16,7 @@ from osf_scraper_api.utilities.rq_helper import get_all_rq_jobs, enqueue_job
 
 
 def screenshot_post_helper(post, fb_scraper):
-    output_path = post['screenshot_path']
+    output_path = get_screenshot_output_key_from_post(post)
     f = tempfile.NamedTemporaryFile(delete=False)
     f.close()
     temp_path = f.name + '.png'
@@ -32,7 +34,7 @@ def screenshot_post_helper(post, fb_scraper):
 
 def screenshot_post(post, fb_scraper):
     try:
-        output_path = post['screenshot_path']
+        output_path = get_screenshot_output_key_from_post(post)
         if file_exists(output_path):
             _log('++ skipping {}'.format(output_path))
             return
@@ -53,18 +55,20 @@ def screenshot_post(post, fb_scraper):
             raise e
 
 
-def screenshot_job(input_folder, fb_username, fb_password):
+def screenshot_job(input_datas, fb_username, fb_password, chronological=False):
     save_current_pipeline(
-        pipeline_name='screenshot',
+        pipeline_name='fb_screenshots',
         pipeline_status='running',
+        pipeline_params={'chronological': chronological}
     )
-    posts_files = os.listdir(input_folder)
+    all_posts = []
     posts_to_scrape = []
-    num_posts_files = len(posts_files)
-    _log('++ enqueuing screenshot jobs for {} posts files'.format(num_posts_files))
-    for index, posts_file in enumerate(posts_files):
+    num_input_datas = len(input_datas)
+    _log('++ enqueuing screenshot jobs for {} files'.format(num_input_datas))
+    for index, posts_data in enumerate(input_datas):
         try:
-            posts = load_dict(posts_file)
+            posts = json.loads(posts_data)
+            all_posts += posts
             for post in posts:
                 output_key = get_screenshot_output_key_from_post(post=post)
                 if file_exists(output_key):
@@ -72,10 +76,19 @@ def screenshot_job(input_folder, fb_username, fb_password):
                 else:
                     posts_to_scrape.append(post)
         except:
-            _log('++ failed to load posts for: {}'.format(posts_file))
+            _log('++ failed to load posts for file')
         if not index % 10:
-            _log('++ loading posts {}/{}'.format(index, num_posts_files))
+            _log('++ loading posts {}/{}'.format(index, num_input_datas))
 
+    # save the actual posts
+    save_current_pipeline(
+        pipeline_name='fb_screenshots',
+        pipeline_status='running',
+        pipeline_params={
+            'posts': all_posts,
+            'chronological': chronological,
+        }
+    )
     # start jobs to screenshot the posts in pages
     page_size=100
     pages = paginate_list(mylist=posts_to_scrape, page_size=page_size)
@@ -124,12 +137,38 @@ def screenshots_post_process():
     pending = filter(filter_fun, rq_jobs)
     # if no pending job found, then screenshot pipeline is complete
     if len(pending) == 0:
-        _log('++ screenshot pipline complete')
+        _log('++ screenshot pipeline complete')
+        finished_pipeline = load_current_pipeline()
+        pipeline_params = finished_pipeline['pipeline_params']
+        posts = pipeline_params['posts']
+        bottom_crop_pix = pipeline_params.get('bottom_crop_pix', 5)
+        chronological = pipeline_params.get('chronological', False)
+        not_chronological = pipeline_params.get('not_chronological', False)
+        enqueue_job(make_pdf_job,
+                    posts=posts,
+                    chronological=chronological,
+                    bottom_crop_pix=bottom_crop_pix,
+                    timeout=432000)
         save_current_pipeline(
-            pipeline_name='screenshots',
+            pipeline_name='fb_screenshots',
             pipeline_status='finished'
         )
     else:
+        current_pipeline = load_current_pipeline()
+        pipeline_params = current_pipeline['pipeline_params']
+        posts = pipeline_params['posts']
+        num_processed = 0
+        for post in posts:
+            screenshot_path = get_screenshot_output_key_from_post(post)
+            if os.path.exists(screenshot_path):
+                num_processed += 1
+        save_current_pipeline(
+            pipeline_params=pipeline_params,
+            pipeline_name='fb_screenshots',
+            pipeline_status='running',
+            num_processed=num_processed,
+            num_total=len(posts)
+        )
         job_logs = []
         for job in rq_jobs:
             j = {

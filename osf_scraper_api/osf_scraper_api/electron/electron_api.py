@@ -1,5 +1,6 @@
 import time
 import os
+import json
 
 from flask import make_response, jsonify, Blueprint, request, abort
 
@@ -7,7 +8,7 @@ from osf_scraper_api.electron.fb_posts import scrape_fb_posts_job, fb_posts_post
 from osf_scraper_api.settings import ENV_DICT
 from osf_scraper_api.electron.screenshot import screenshot_job, screenshots_post_process
 from osf_scraper_api.electron.utils import save_current_pipeline, load_current_pipeline, get_current_friends
-from osf_scraper_api.electron.make_pdf import make_pdf_job
+from osf_scraper_api.electron.make_pdf import make_pdf_job, make_text_pdf_job
 from osf_scraper_api.electron.fb_friends import scrape_fb_friends
 from osf_scraper_api.settings import TEMPLATE_DIR
 from osf_scraper_api.utilities.log_helper import _log
@@ -180,7 +181,7 @@ def get_electron_api_blueprint():
         elif pipeline_name == 'fb_screenshots':
             _log('++ checking whether screenshots pipeline is complete')
             screenshots_post_process()
-        elif pipeline_name in ['fb_friends']:
+        elif pipeline_name in ['fb_friends', 'make_pdf']:
             pass
         else:
             raise Exception('++ invalid pipeline: {}'.format(pipeline_name))
@@ -188,17 +189,38 @@ def get_electron_api_blueprint():
             'message': 'ok'
         }), 200)
 
-    @electron_blueprint.route('/api/electron/fb_screenshots/', methods=['POST'])
-    def fb_screenshots_endpoint():
+    @electron_blueprint.route('/api/electron/pdf/', methods=['POST'])
+    def pdf_endpoint():
         params = request.get_json()
-        input_folder = params['input_folder']
+        input_datas = params['input_datas']
         fb_username = params['fb_username']
         fb_password = params['fb_password']
+        screenshot_posts = params['screenshot_posts']
+        chronological = params['chronological']
+        if screenshot_posts:
+            return fb_screenshots_endpoint(input_datas=input_datas, fb_username=fb_username, fb_password=fb_password, chronological=chronological)
+        else:
+            all_posts = []
+            for input_data in input_datas:
+                try:
+                    posts = json.loads(input_data)
+                    all_posts += posts
+                except:
+                    _log('++ failed to parse posts file')
+            enqueue_job(make_text_pdf_job,
+                        posts=all_posts,
+                        chronological=chronological,
+                        timeout=432000)
+            return make_response(jsonify({
+                'message': '.txt job enqueued'
+            }), 200)
 
+    def fb_screenshots_endpoint(input_datas, fb_username, fb_password, chronological):
         enqueue_job(screenshot_job,
-            input_folder=input_folder,
+            input_datas=input_datas,
             fb_username=fb_username,
             fb_password=fb_password,
+            chronological=chronological,
             timeout = 3600
         )
         return make_response(jsonify({

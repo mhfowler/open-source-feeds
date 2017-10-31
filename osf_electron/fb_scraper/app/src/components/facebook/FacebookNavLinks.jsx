@@ -10,7 +10,7 @@ class FacebookNavLinks extends Component {
                 <div className="medium-12 columns navlinks">
                     <NavLink path='/fb/friends' title='Friends'/>
                     <NavLink path='/fb/posts' title='Posts'/>
-                    <NavLink path='/fb/screenshots' title='PDF'/>
+                    <NavLink path='/fb/screenshots' title='Print'/>
                 </div>
             </div>
         )
