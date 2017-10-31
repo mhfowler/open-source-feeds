@@ -1,7 +1,0 @@
-  version: '3'
-  services:
-    osf_dashboard:
-      image: 'mfowler/${BUILD_ENV}_osf_dashboard'
-      ports:
-        - '80:80'
-        - '443:443'

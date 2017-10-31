@@ -16,7 +16,7 @@ const isOnline = require('is-online');
 const Tail = require('tail').Tail;
 
 // Let electron reloads by itself when webpack watches changes in ./app/
-if (process.env.OSF_DEV) {
+if (process.env.OSF_RELOAD) {
     require('electron-reload')(__dirname);
 }
 
@@ -479,7 +479,9 @@ function createWindow() {
             mainWindowLoaded:  true
         });
         initializeElectron();
-        setApplicationMenu();
+        if (!process.env.OSF_RELOAD) {
+            setApplicationMenu();
+        }
     });
 }
 

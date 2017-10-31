@@ -1,3 +1,22 @@
+.selected-files {
+    margin-bottom: 20px;
+}
+
+.file-picker {
+   width: 200px;
+  height: 50px;
+    border: 1px dotted lightgray;
+    border-radius: 10px;
+    margin-top: 10px;
+    display: flex;
+    text-align: center;
+    color: #a7a7a7;
+    margin-bottom: 20px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
 strong {
     font-weight: bold;
 }

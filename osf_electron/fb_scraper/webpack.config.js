@@ -1,4 +1,5 @@
 const ExtractTextPlugin = require('extract-text-webpack-plugin')
+const path = require('path');
 
 module.exports = {
 
@@ -18,6 +19,9 @@ module.exports = {
         rules: [
             {
                 test: /\.jsx?$/,
+                include: [
+                    path.resolve(__dirname, "app")
+                 ],
                 loader: 'babel-loader',
                 options: {
                     presets: ['react']
