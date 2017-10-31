@@ -77,5 +77,13 @@ def _capture_rq_exception(exc_type, exc_value, exc_traceback):
         sentry.captureException()
 
 
+# initialize log file
+log_path = ENV_DICT.get('FS_LOG_PATH')
+if log_path:
+    if not os.path.exists(log_path):
+        open(log_path, 'a').close()
+    _log('++ logging to {}'.format(log_path))
+
+
 if __name__ == '__main__':
     _log('test')

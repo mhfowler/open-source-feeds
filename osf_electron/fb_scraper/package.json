@@ -1,15 +1,38 @@
 {
-  "name": "electron-with-create-react-app",
-  "version": "0.1.0",
-  "private": true,
-  "devDependencies": {
-    "electron": "^1.4.14",
-    "foreman": "^2.0.0",
-    "react-scripts": "0.8.5"
+  "name": "open-source-feeds",
+  "productName": "Open Source Feeds",
+  "version": "1.0.0",
+  "description": "Open Source Feeds",
+  "main": "main.js",
+  "scripts": {
+    "dev": "webpack",
+    "start": "electron .",
+    "build": "electron-packager ./ --platform=darwin --arch=x64 --prune --overwrite"
   },
+  "author": "Max Fowler <maxhfowler@gmail.com>",
+  "repository": "mhfowler/open-source-feeds",
+  "license": "WTFPL",
+  "devDependencies": {
+    "babel-core": "^6.23.1",
+    "babel-loader": "^6.3.2",
+    "babel-preset-react": "^6.23.0",
+    "css-loader": "^0.26.1",
+    "electron": "^1.4.15",
+    "electron-reload": "^1.1.0",
+    "extract-text-webpack-plugin": "^2.0.0-rc.3",
+    "file-loader": "^0.9.0",
+    "webpack": "^2.2.1",
+    "electron-packager": "^7.7.0",
+    "electron-prebuilt": "^1.2.0"
+  },
+  "files": [
+    "assetts/*",
+    "app/*"
+  ],
   "dependencies": {
-    "async-request": "^1.2.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
     "classnames": "^2.2.5",
+    "fs-extra": "^4.0.2",
     "is-online": "^7.0.0",
     "node-fetch": "^1.7.3",
     "react": "^15.4.2",
@@ -19,16 +42,6 @@
     "react-notification-system": "^0.2.16",
     "react-router": "^4.2.0",
     "react-router-dom": "^4.2.2",
-    "request": "^2.83.0"
-  },
-  "homepage": "./",
-  "main": "src/electron-starter.js",
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject",
-    "electron": "electron .",
-    "dev": "nf start -p 3000"
+    "tail": "^1.2.3"
   }
 }

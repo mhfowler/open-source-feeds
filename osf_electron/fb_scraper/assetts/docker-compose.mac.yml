@@ -1,41 +1,34 @@
   version: '3'
   services:
-    osf_scraper_base:
-      image: 'osf_scraper_base'
-      build:
-        context: ../
-        dockerfile: osf_scraper_api/BaseDockerFile
     osf_scraper_api:
       image: 'mfowler/local_osf_scraper_api'
-      build:
-        context: ../
-        dockerfile: osf_scraper_api/Dockerfile
-        args:
-          - BUILD_ENV
       ports:
         - '80:80'
         - '443:443'
       links:
-        - redis
         - selenium
-      depends_on:
-        - osf_scraper_base
+        - redis
+      environment:
+        - OSF_QUEUE=osf0
+        - NUM_RQ_WORKERS=2
+      volumes:
+        - "~/Desktop/osf/data:/srv/fs"
     redis:
       image: redis
       ports:
         - "6379"
+      volumes:
+        - "~/Desktop/osf/redis:/data"
     selenium:
       image: selenium/standalone-chrome
       ports:
         - "4444:4444"
+      volumes:
+        - "/dev/shm:/dev/shm"
     osf_cron:
       image: 'mfowler/local_osf_cron'
       environment:
         - API_DOMAIN=osf_scraper_api:80
-      build:
-        dockerfile: CronDockerfile
-        context: .
       links:
         - osf_scraper_api
-
 

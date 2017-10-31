@@ -9,7 +9,7 @@ from osf_scraper_api.utilities.osf_helper import get_fb_scraper, wait_for_online
 from osf_scraper_api.utilities.email_helper import send_email
 from osf_scraper_api.settings import DATA_DIR
 from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
-from osf_scraper_api.electron.utils import save_current_pipeline, load_current_pipeline
+from osf_scraper_api.electron.utils import save_current_pipeline, load_current_pipeline, convert_to_host_path
 from osf_scraper_api.utilities.selenium_helper import restart_selenium
 from osf_scraper_api.utilities.rq_helper import get_all_rq_jobs
 
@@ -52,14 +52,29 @@ def fb_posts_post_process():
         _log('++ scrape fb posts pipeline finished')
         finished_pipeline = load_current_pipeline()
         pipeline_params = finished_pipeline['pipeline_params']
+        host_output_folder = convert_to_host_path(pipeline_params['output_folder'])
         save_current_pipeline(
             pipeline_name='fb_posts',
             pipeline_status='finished',
             pipeline_params=finished_pipeline['pipeline_params'],
-            pipeline_message=pipeline_params['output_folder']
+            pipeline_message=host_output_folder,
+            num_total=finished_pipeline['num_total'],
+            num_processed=finished_pipeline['num_processed']
         )
     else:
         _log('++ found {} pending jobs, continuing fb posts pipeline'.format(len(pending)))
+        current_pipeline = load_current_pipeline()
+        pipeline_params = current_pipeline['pipeline_params']
+        output_folder = pipeline_params['output_folder']
+        num_output_files = len(os.listdir(output_folder))
+        save_current_pipeline(
+            pipeline_name=current_pipeline['pipeline_name'],
+            pipeline_status='running',
+            pipeline_params=current_pipeline['pipeline_params'],
+            pipeline_message=pipeline_params['output_folder'],
+            num_processed=num_output_files,
+            num_total=current_pipeline['num_total']
+        )
 
 
 def scrape_fb_posts(params, output_path, fb_scraper=None, num_attempts=0):
@@ -79,7 +94,7 @@ def scrape_fb_posts(params, output_path, fb_scraper=None, num_attempts=0):
             restart_selenium()
             fb_scraper.re_initialize_driver()
             num_attempts += 1
-            return scrape_fb_posts(params=params, fb_scraper=fb_scraper, num_attempts=num_attempts)
+            return scrape_fb_posts(params=params, output_path=output_path, fb_scraper=fb_scraper, num_attempts=num_attempts)
         else:
             restart_selenium()
             fb_scraper.re_initialize_driver()

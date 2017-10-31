@@ -1,0 +1,7 @@
+  version: '3'
+  services:
+    osf_cron:
+      image: 'mfowler/local_osf_cron'
+      environment:
+        - API_DOMAIN=docker.for.mac.localhost:5002
+

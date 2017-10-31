@@ -452,7 +452,7 @@ class FbScraper():
 
             # grab the posts
             # found_posts = self.driver.find_elements_by_css_selector('a._5pcq')
-            found_sel_posts = self.driver.find_elements_by_css_selector('div.fbUserContent, div.fbUserContent, div.fbUserStory')
+            found_sel_posts = self.driver.find_elements_by_css_selector('div.fbUserContent, div.fbUserContent, div.fbUserStory, div.userContentWrapper')
             found_posts = [Post(x) for x in found_sel_posts]
             # filter out malformed posts
             valid_posts = filter(lambda p: p.is_valid(), found_posts)

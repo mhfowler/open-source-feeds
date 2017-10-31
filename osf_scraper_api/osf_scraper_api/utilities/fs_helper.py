@@ -75,6 +75,18 @@ def list_files_in_folder(f_path):
         raise Exception('++ invalid FS_BIN_TYPE: {}'.format(ENV_DICT['FS_BIN_TYPE']))
 
 
+def delete_file(f_path):
+    if ENV_DICT['FS_BIN_TYPE'] == 'S3':
+        raise Exception('++ not implemented')
+    elif ENV_DICT['FS_BIN_TYPE'] == 'FILE_SYSTEM':
+        fs_path = os.path.join(ENV_DICT['FS_BASE_PATH'], f_path)
+        if os.path.exists(fs_path):
+            os.unlink(fs_path)
+        return True
+    else:
+        raise Exception('++ invalid FS_BIN_TYPE: {}'.format(ENV_DICT['FS_BIN_TYPE']))
+
+
 if __name__ == '__main__':
     test_dict = {
         'val': 1,

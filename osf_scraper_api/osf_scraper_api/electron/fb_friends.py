@@ -1,6 +1,6 @@
 from osf_scraper_api.utilities.log_helper import _log
 from osf_scraper_api.utilities.osf_helper import get_fb_scraper, wait_for_online
-from osf_scraper_api.electron.utils import save_current_pipeline
+from osf_scraper_api.electron.utils import save_current_pipeline, convert_to_host_path
 from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
 
 
@@ -51,8 +51,9 @@ def scrape_fb_friends(fb_username, fb_password):
     save_dict(output_dict, 'friends/current.json')
 
     _log('++ fb_friends pipeline complete')
+    host_output_path = convert_to_host_path(output_path)
     save_current_pipeline(
         pipeline_name='fb_friends',
         pipeline_status='finished',
-        pipeline_message=output_path
+        pipeline_message=host_output_path
     )

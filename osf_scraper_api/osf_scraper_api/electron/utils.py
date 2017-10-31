@@ -94,13 +94,19 @@ def get_current_friends():
     return friends
 
 
-def save_current_pipeline(pipeline_name, pipeline_status, pipeline_params={}, pipeline_message=None):
+def save_current_pipeline(pipeline_name, pipeline_status,
+                          num_processed=0,
+                          num_total=0, pipeline_params=None, pipeline_message=None):
+    if not pipeline_params:
+        pipeline_params = {}
     output_key = 'pipeline.json'
     data_dict = {
         'pipeline_name': pipeline_name,
         'pipeline_status': pipeline_status,
         'pipeline_message': pipeline_message,
         'pipeline_params': pipeline_params,
+        'num_total': num_total,
+        'num_processed': num_processed
     }
     save_dict(data_dict=data_dict, destination=output_key)
 
@@ -117,3 +123,7 @@ def load_current_pipeline():
         return load_dict(output_key)
     else:
         return {}
+
+
+def convert_to_host_path(f_path):
+    return f_path.replace(ENV_DICT['FS_BASE_PATH'], ENV_DICT['HOST_BASE_PATH'])
