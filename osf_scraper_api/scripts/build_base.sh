@@ -1,6 +1,7 @@
 #!/bin/bash -e
 echo "++ building docker image for build env: ${BUILD_ENV}"
 BASEDIR=$(cd $(dirname $0)/..  ; pwd -P )
+BUILD_ENV=local
 echo "BASEDIR: ${BASEDIR}"
 
 if [ -n "$DOCKER_NO_CACHE" ];
