@@ -1,17 +1,17 @@
 import random
-import tempfile
 import datetime
 import os
 import time
 
 from fpdf import FPDF
 from PIL import Image
+from flask import render_template
 
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.utilities.fs_helper import load_dict, save_file
 from osf_scraper_api.utilities.s3_helper import s3_download_file
 from osf_scraper_api.electron.utils import save_current_pipeline
-from osf_scraper_api.settings import ENV_DICT
+from osf_scraper_api.settings import ENV_DICT, PROJECT_PATH
 from osf_scraper_api.electron.utils import fetch_friends_of_user, \
     get_posts_folder, get_user_from_user_file, get_screenshot_output_key_from_post, convert_to_host_path
 
@@ -106,13 +106,52 @@ def make_pdf_job(posts, image_file_dir=None, chronological=False, bottom_crop_pi
     _log('++ job complete')
 
 
+def make_html_job(posts, chronological=False):
+    _log('++ starting make_html job')
+    save_current_pipeline(
+        pipeline_name='make_html',
+        pipeline_status='running'
+    )
+
+    f_name = 'osf-{}.html'.format(str(int(time.time())))
+    output_folder = os.path.join(ENV_DICT['FS_BASE_PATH'], 'output')
+    output_path = os.path.join(output_folder, f_name)
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    if chronological:
+        posts.sort(key=lambda post: post['date'])
+
+    for post in posts:
+        date = post['date']
+        dt = datetime.datetime.fromtimestamp(date)
+        time_string = dt.strftime('%b %d, %Y')
+        post['time_string'] = time_string
+
+    page_text = render_template('posts.html', posts=posts)
+
+    # output .txt
+    _log('++ saving .html to {}'.format(output_path))
+    with open(output_path, 'w') as f:
+        f.write(page_text.encode('utf8'))
+
+    docker_path = os.path.join(ENV_DICT['FS_BASE_PATH'], output_path)
+    host_output_path = convert_to_host_path(docker_path)
+    save_current_pipeline(
+        pipeline_name='make_html',
+        pipeline_status='finished',
+        pipeline_message=host_output_path
+    )
+    _log('++ job complete')
+
+
 def make_text_pdf_job(posts, chronological=False):
     _log('++ starting make_text_pdf job')
     save_current_pipeline(
         pipeline_name='make_pdf',
         pipeline_status='running'
     )
-    f_name = 'osf-{}.txt'.format(str(int(time.time())))
+    f_name = 'osf-{}.md'.format(str(int(time.time())))
     output_folder = os.path.join(ENV_DICT['FS_BASE_PATH'], 'output')
     output_path = os.path.join(output_folder, f_name)
     if not os.path.exists(output_folder):
@@ -143,7 +182,7 @@ def make_text_pdf_job(posts, chronological=False):
             text_string += '\n{}'.format(content['link'])
         if content.get('images'):
             for img in content.get('images'):
-                img_string = '[img]: {}'.format(img)
+                img_string = '![img]({})'.format(img)
                 text_string += '\n' + img_string
         text_string += '\n\n\n\n'
         if not index % 10:

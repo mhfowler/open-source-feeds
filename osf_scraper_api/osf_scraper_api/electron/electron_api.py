@@ -8,7 +8,7 @@ from osf_scraper_api.electron.fb_posts import scrape_fb_posts_job, fb_posts_post
 from osf_scraper_api.settings import ENV_DICT
 from osf_scraper_api.electron.screenshot import screenshot_job, screenshots_post_process
 from osf_scraper_api.electron.utils import save_current_pipeline, load_current_pipeline, get_current_friends
-from osf_scraper_api.electron.make_pdf import make_pdf_job, make_text_pdf_job
+from osf_scraper_api.electron.make_pdf import make_pdf_job, make_html_job
 from osf_scraper_api.electron.fb_friends import scrape_fb_friends
 from osf_scraper_api.settings import TEMPLATE_DIR
 from osf_scraper_api.utilities.log_helper import _log
@@ -82,6 +82,7 @@ def get_electron_api_blueprint():
             if req_field not in params.keys():
                 abort(make_response(jsonify({'message': '{} field is required.'.format(req_field)}), 422))
 
+        download_images = params.get('download_images', False)
         which_pages_setting = params.get('which_pages_setting')
         selected_friends = params.get('selected_friends')
         if which_pages_setting == 'all':
@@ -142,6 +143,7 @@ def get_electron_api_blueprint():
         # save which job_ids are in this stage
         pipeline_params = scraper_params
         pipeline_params['output_folder'] = output_folder
+        pipeline_params['download_images'] = download_images
         save_current_pipeline(
             pipeline_name='fb_posts',
             pipeline_status='running',
@@ -181,7 +183,7 @@ def get_electron_api_blueprint():
         elif pipeline_name == 'fb_screenshots':
             _log('++ checking whether screenshots pipeline is complete')
             screenshots_post_process()
-        elif pipeline_name in ['fb_friends', 'make_pdf']:
+        elif pipeline_name in ['fb_friends', 'make_pdf', 'make_txt', 'make_html']:
             pass
         else:
             raise Exception('++ invalid pipeline: {}'.format(pipeline_name))
@@ -207,7 +209,7 @@ def get_electron_api_blueprint():
                     all_posts += posts
                 except:
                     _log('++ failed to parse posts file')
-            enqueue_job(make_text_pdf_job,
+            enqueue_job(make_html_job,
                         posts=all_posts,
                         chronological=chronological,
                         timeout=432000)

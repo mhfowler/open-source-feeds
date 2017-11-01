@@ -7,11 +7,12 @@ import datetime
 from osf_scraper_api.utilities.log_helper import _log, _capture_exception
 from osf_scraper_api.utilities.osf_helper import get_fb_scraper, wait_for_online, check_online
 from osf_scraper_api.utilities.email_helper import send_email
+from osf_scraper_api.electron.download_images import download_images_job
 from osf_scraper_api.settings import DATA_DIR
 from osf_scraper_api.utilities.fs_helper import save_dict, file_exists
 from osf_scraper_api.electron.utils import save_current_pipeline, load_current_pipeline, convert_to_host_path
 from osf_scraper_api.utilities.selenium_helper import restart_selenium
-from osf_scraper_api.utilities.rq_helper import get_all_rq_jobs
+from osf_scraper_api.utilities.rq_helper import get_all_rq_jobs, enqueue_job
 
 
 def scrape_fb_posts_job(users, output_folder, scraper_params, fb_username, fb_password):
@@ -52,15 +53,21 @@ def fb_posts_post_process():
         _log('++ scrape fb posts pipeline finished')
         finished_pipeline = load_current_pipeline()
         pipeline_params = finished_pipeline['pipeline_params']
-        host_output_folder = convert_to_host_path(pipeline_params['output_folder'])
-        save_current_pipeline(
-            pipeline_name='fb_posts',
-            pipeline_status='finished',
-            pipeline_params=finished_pipeline['pipeline_params'],
-            pipeline_message=host_output_folder,
-            num_total=finished_pipeline['num_total'],
-            num_processed=finished_pipeline['num_processed']
-        )
+        download_images = pipeline_params.get('download_images')
+        if not download_images:
+            host_output_folder = convert_to_host_path(pipeline_params['output_folder'])
+            save_current_pipeline(
+                pipeline_name='fb_posts',
+                pipeline_status='finished',
+                pipeline_params=finished_pipeline['pipeline_params'],
+                pipeline_message=host_output_folder,
+                num_total=finished_pipeline['num_total'],
+                num_processed=finished_pipeline['num_processed']
+            )
+        else:
+            enqueue_job(download_images_job,
+                        posts_folder=pipeline_params['output_folder'],
+                        timeout=432000)
     else:
         _log('++ found {} pending jobs, continuing fb posts pipeline'.format(len(pending)))
         current_pipeline = load_current_pipeline()

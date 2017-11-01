@@ -2,6 +2,7 @@ import re
 import json
 import random
 import time
+import os
 import hashlib
 import datetime
 
@@ -15,6 +16,20 @@ from osf_scraper_api.settings import ENV_DICT
 
 def get_posts_folder():
     return ENV_DICT['POSTS_FOLDER']
+
+
+def load_posts_from_folder(posts_folder):
+    post_files = os.listdir(posts_folder)
+    all_posts = []
+    for post_file in post_files:
+        f_path = os.path.join(posts_folder, post_file)
+        try:
+            with open(f_path, 'r') as f:
+                posts = json.loads(f.read())
+                all_posts += posts
+        except:
+            _log('++ failed to load posts from file {}'.format(f_path))
+    return all_posts
 
 
 def get_user_from_user_file(user_file, input_folder):
@@ -79,6 +94,12 @@ def get_screenshot_output_key_from_post(post):
     except:
         date_str = 'None'
     output_key = 'screenshots/{}-{}-{}.png'.format(page, date_str, post_id)
+    return output_key
+
+
+def get_image_output_key_from_url(url):
+    image_id = str(int(hashlib.sha1(url).hexdigest(), 16) % (10 ** 8))
+    output_key = 'images/{}.png'.format(image_id)
     return output_key
 
 

@@ -6,8 +6,6 @@ from flask import Flask, Response, request, render_template, g
 from osf_scraper_api.api.facebook import get_facebook_blueprint
 from osf_scraper_api.api.utils import get_utils_blueprint
 from osf_scraper_api.api.helper import get_helpers_blueprint
-from osf_scraper_api.crawler.crawler_api import get_crawler_blueprint
-from osf_scraper_api.crawler.test_errors import get_test_errors_blueprint
 from osf_scraper_api.electron.electron_api import get_electron_api_blueprint
 from osf_scraper_api.utilities.rq_helper import get_queue_map
 from osf_scraper_api.utilities.osf_helper import save_last_uptime
@@ -64,9 +62,7 @@ def create_app():
     app.register_blueprint(get_helpers_blueprint())
     app.register_blueprint(get_facebook_blueprint(queue_map))
     app.register_blueprint(get_utils_blueprint(queue_map))
-    app.register_blueprint(get_crawler_blueprint(queue_map))
     app.register_blueprint(get_electron_api_blueprint())
-    app.register_blueprint(get_test_errors_blueprint())
     app.register_blueprint(rq_dashboard.blueprint, url_prefix='/rq')
 
     # configure sentry

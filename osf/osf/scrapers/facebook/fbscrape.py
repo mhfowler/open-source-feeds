@@ -117,12 +117,19 @@ class Post:
         # try to get images
         image_divs = self.element.find_elements_by_css_selector('._4-eo')
         if image_divs:
-            image_links = []
+            fb_image_links = []
+            direct_image_links = []
             for image_div in image_divs:
                 image_link = image_div.get_attribute('href')
-                image_links.append(image_link)
-            if image_links:
-                content['images'] = image_links
+                fb_image_links.append(image_link)
+                img_divs = image_div.find_elements_by_css_selector('img')
+                for img_div in img_divs:
+                    direct_link = img_div.get_attribute('src')
+                    direct_image_links.append(direct_link)
+            if fb_image_links:
+                content['fb_images'] = fb_image_links
+            if direct_image_links:
+                content['images'] = direct_image_links
 
         # try to get events
         event_divs = self.element.find_elements_by_css_selector('._fw-')

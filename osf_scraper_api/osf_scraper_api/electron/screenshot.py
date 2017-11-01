@@ -143,16 +143,11 @@ def screenshots_post_process():
         posts = pipeline_params['posts']
         bottom_crop_pix = pipeline_params.get('bottom_crop_pix', 5)
         chronological = pipeline_params.get('chronological', False)
-        not_chronological = pipeline_params.get('not_chronological', False)
         enqueue_job(make_pdf_job,
                     posts=posts,
                     chronological=chronological,
                     bottom_crop_pix=bottom_crop_pix,
                     timeout=432000)
-        save_current_pipeline(
-            pipeline_name='fb_screenshots',
-            pipeline_status='finished'
-        )
     else:
         current_pipeline = load_current_pipeline()
         pipeline_params = current_pipeline['pipeline_params']

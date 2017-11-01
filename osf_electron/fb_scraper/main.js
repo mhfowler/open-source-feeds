@@ -344,7 +344,8 @@ ipcMain.on('fetch-friends', function (event, args) {
 });
 
 async function fetchPosts(params) {
-    const {fbUsername, fbPassword, afterDate, beforeDate, whichPagesSetting, selectedFriends} = params;
+    const {fbUsername, fbPassword, afterDate,
+        beforeDate, whichPagesSetting, selectedFriends, downloadImages} = params;
     try {
         fetch(`${API_DOMAIN}/api/electron/fb_posts/`, {
             method: 'POST',
@@ -359,6 +360,7 @@ async function fetchPosts(params) {
                 before_date: beforeDate,
                 selected_friends: selectedFriends,
                 which_pages_setting: whichPagesSetting,
+                download_images: downloadImages
             }),
         });
     } catch (err) {
@@ -375,7 +377,8 @@ ipcMain.on('fetch-posts', function (event, args) {
         afterDate: args.afterDate,
         beforeDate: args.beforeDate,
         whichPagesSetting: args.whichPagesSetting,
-        selectedFriends: args.selectedFriends
+        selectedFriends: args.selectedFriends,
+        downloadImages: args.downloadImages,
     });
 });
 

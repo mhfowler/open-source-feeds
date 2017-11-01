@@ -17,6 +17,7 @@ class FacebookPostsScraper extends Component {
             beforeDate: null,
             showAdvanced: false,
             whichPagesSetting: 'all',
+            downloadImages: false,
         };
         this.handleClickFetchPosts = this.handleClickFetchPosts.bind(this);
         this.getPostsScraper = this.getPostsScraper.bind(this);
@@ -43,7 +44,8 @@ class FacebookPostsScraper extends Component {
             afterDate: this.state.afterDate,
             beforeDate: this.state.beforeDate,
             whichPagesSetting: this.state.whichPagesSetting,
-            selectedFriends: selectedFriends
+            selectedFriends: selectedFriends,
+            downloadImages:  this.state.downloadImages,
         });
     };
 
@@ -84,6 +86,26 @@ class FacebookPostsScraper extends Component {
                 setFbUsername={(ev) => this.setState({fbUsername: ev.target.value})}
                 setFbPassword={(ev) => this.setState({fbPassword: ev.target.value})}
             />
+                  <div className="row">
+             <div className="medium-12 columns">
+                      <div className="friends-option">
+                          <input
+                            type="checkbox"
+                            className="download-images-input"
+                            name="download-images-input"
+                            checked={this.state.downloadImages}
+                            onChange={() => {
+                                if (this.state.downloadImages) {
+                                    this.setState({downloadImages: false})
+                                } else {
+                                    this.setState({downloadImages: true})
+                                }
+                            }}
+                          />
+                        <label>Download Images</label>
+                      </div>
+                </div>
+              </div>
             <div className="row">
                 <div className="medium-12 columns">
                     <button id="generate-button" onClick={this.handleClickFetchPosts} className="button osf-button" type="submit">Fetch Posts</button>
