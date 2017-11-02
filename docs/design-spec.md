@@ -38,7 +38,7 @@ The three types of modules are
 - Render Modules
    - takes in a list of posts and renders them to HTML (different render modules can expect certain types of posts and ignore others)
    
-![img]("https://i.imgur.com/DemBPxh.jpg")
+![img](https://i.imgur.com/DemBPxh.jpg)
    
 ### OSF Design Goals
 
