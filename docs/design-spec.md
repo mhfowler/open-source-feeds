@@ -1,9 +1,9 @@
 ## OSF Design Spec
 
-An open source codebase for a server which lets you create and configure feeds which update on a regular
-basis on a remote server and can be viewed through the internet. 
+An open source web application which lets you create and configure feeds which update on a regular
+basis and can be viewed through the internet. 
 
-There will be two main ways this is used:
+The application will be deployed in two ways:
 - a canonical server running in AWS which users
 can simply sign up for through the web. 
 - utilities to easily deploy your own server on Ubuntu or Raspberry pi
