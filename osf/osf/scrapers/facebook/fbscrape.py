@@ -117,12 +117,19 @@ class Post:
         # try to get images
         image_divs = self.element.find_elements_by_css_selector('._4-eo')
         if image_divs:
-            image_links = []
+            fb_image_links = []
+            direct_image_links = []
             for image_div in image_divs:
                 image_link = image_div.get_attribute('href')
-                image_links.append(image_link)
-            if image_links:
-                content['images'] = image_links
+                fb_image_links.append(image_link)
+                img_divs = image_div.find_elements_by_css_selector('img')
+                for img_div in img_divs:
+                    direct_link = img_div.get_attribute('src')
+                    direct_image_links.append(direct_link)
+            if fb_image_links:
+                content['fb_images'] = fb_image_links
+            if direct_image_links:
+                content['images'] = direct_image_links
 
         # try to get events
         event_divs = self.element.find_elements_by_css_selector('._fw-')
@@ -452,7 +459,7 @@ class FbScraper():
 
             # grab the posts
             # found_posts = self.driver.find_elements_by_css_selector('a._5pcq')
-            found_sel_posts = self.driver.find_elements_by_css_selector('div.fbUserContent, div.fbUserContent, div.fbUserStory')
+            found_sel_posts = self.driver.find_elements_by_css_selector('div.fbUserContent, div.fbUserContent, div.fbUserStory, div.userContentWrapper')
             found_posts = [Post(x) for x in found_sel_posts]
             # filter out malformed posts
             valid_posts = filter(lambda p: p.is_valid(), found_posts)
@@ -510,6 +517,10 @@ class FbScraper():
         to_return = []
         for post_link, post in posts.items():
             to_return.append(post)
+
+        # add the page this was scraped from to each post
+        for post in to_return:
+            post['page'] = user
 
         # if there is before_date, then filter the posts
         if before_date:

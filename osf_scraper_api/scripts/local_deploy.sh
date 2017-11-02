@@ -7,3 +7,4 @@ echo "++ finished building"
 
 # deploy to docker hub
 docker push "mfowler/local_osf_scraper_api"
+docker push "mfowler/local_osf_cron"

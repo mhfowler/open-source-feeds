@@ -80,6 +80,15 @@ def get_rq_jobs(queue_name):
     return all_jobs
 
 
+def get_all_rq_jobs():
+    queue_names = ENV_DICT['QUEUE_NAMES']
+    all_jobs = []
+    for queue_name in queue_names:
+        jobs = get_rq_jobs(queue_name)
+        all_jobs += jobs
+    return all_jobs
+
+
 def str_to_probability(in_str):
     """Return a reproducible uniformly random float in the interval [0, 1) for the given seed."""
     return random.Random(in_str).randint(0, len(ENV_DICT['QUEUE_NAMES']))
@@ -115,17 +124,10 @@ def clear_old_workers():
 
 
 def stop_jobs():
-    queue_map = get_queue_map()
-    for queue_name, queue in queue_map.items():
-        _log('++ clearing queue: {}'.format(queue_name))
-        queue.empty()
-    _log('++ clearing failed queue')
-    failed = get_osf_queue(queue_name='failed')
-    failed.empty()
-    conn = get_redis_connection()
-    for w in Worker.all(conn):
-        _log('++ stopping rq worker {}'.format(w.pid))
-        w.register_death()
+    # TODO: figure out how to stop running jobs
+    jobs = get_all_rq_jobs()
+    for job in jobs:
+        job.delete()
 
 
 def restart_failed_jobs():

@@ -1,0 +1,57 @@
+body {
+    padding: 3rem;
+    cursor: default;
+    -webkit-app-region: drag;
+}
+header {
+    -webkit-app-region: drag;
+}
+
+.osf-title {
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.title-row {
+    margin-bottom: 20px;
+}
+
+.osf-button {
+    margin-top: 15px;
+    background-color: black;
+    width: 160px;
+}
+.osf-button:hover {
+    background-color: gray;
+}
+.osf-explanation {
+    margin-top: 15px;
+}
+
+.success-alert {
+    display:none;
+}
+.error-alert {
+    display:none;
+}
+.stop-button {
+    display: none;
+}
+
+.no-docker {
+    display: none;
+}
+.main-window {
+    display: none;
+}
+.state {
+    display: none;
+}
+
+button {
+    -webkit-app-region: no-drag;
+}
+
+code {
+    -webkit-app-region: no-drag;
+}

@@ -1,0 +1,5 @@
+* * * * * curl $API_DOMAIN/api/electron/check_pipeline/ >> /srv/log/cron.log 2>&1
+* * * * * ( sleep 30 ; curl $API_DOMAIN/api/electron/check_pipeline/ >> /srv/log/cron.log 2>&1 )
+* * * * * /bin/echo API_DOMAIN: $API_DOMAIN >> /srv/log/cron.log 2>&1
+* * * * * /bin/echo $(date) >> /srv/log/cron.log 2>&1
+# An empty line is required at the end of this file for a valid cron file.

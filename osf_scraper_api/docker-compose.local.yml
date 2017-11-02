@@ -28,4 +28,14 @@
       image: selenium/standalone-chrome
       ports:
         - "4444:4444"
+    osf_cron:
+      image: 'mfowler/local_osf_cron'
+      environment:
+        - API_DOMAIN=osf_scraper_api:80
+      build:
+        dockerfile: CronDockerfile
+        context: .
+      links:
+        - osf_scraper_api
+
 

@@ -14,7 +14,7 @@ def save_dict(data_dict, destination):
         with open(f_path, 'w') as f:
             f.write(contents)
         # save file
-        save_file(source_file_path=f_path, destination=destination)
+        return save_file(source_file_path=f_path, destination=destination)
     finally:
         os.unlink(f_path)
 
@@ -71,6 +71,18 @@ def list_files_in_folder(f_path):
         f_names = os.listdir(fs_path)
         f_paths = [os.path.join(f_path, f_name) for f_name in f_names]
         return f_paths
+    else:
+        raise Exception('++ invalid FS_BIN_TYPE: {}'.format(ENV_DICT['FS_BIN_TYPE']))
+
+
+def delete_file(f_path):
+    if ENV_DICT['FS_BIN_TYPE'] == 'S3':
+        raise Exception('++ not implemented')
+    elif ENV_DICT['FS_BIN_TYPE'] == 'FILE_SYSTEM':
+        fs_path = os.path.join(ENV_DICT['FS_BASE_PATH'], f_path)
+        if os.path.exists(fs_path):
+            os.unlink(fs_path)
+        return True
     else:
         raise Exception('++ invalid FS_BIN_TYPE: {}'.format(ENV_DICT['FS_BIN_TYPE']))
 
