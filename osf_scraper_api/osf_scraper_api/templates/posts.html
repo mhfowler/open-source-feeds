@@ -23,29 +23,38 @@
             text-decoration: underline;
             max-width: 300px;
         }
+        .meta {
+            margin-bottom: 30px;
+            margin-top: 50px;
+        }
     </style>
 </head>
 <body>
     <div class="posts">
         {% for post in posts %}
-            <div class="post-wrapper">
-                <div>author: {{post.content.author}}</div>
-                <div>{{post.time_string}}</div>
-                <div>{{post.content.text}}</div>
-                {% if post.content.images %}
-                    {% for image in post.content.images %}
-                        <img class="fb-img" src="{{image}}"/>
-                    {% endfor %}
-                {% endif %}
-                {% if post.content.link %}
-                    <a href="{{post.content.link}}">{{post.content.link[:100]}}</a>
-                {% endif %}
-                {% if post.content.event %}
-                    <a href="{{post.content.event.event_link}}">{{post.content.event.event_title}}</a>
-                    <div>{{post.content.event.event_info}}</div>
-                {% endif %}
-            </div>
+            {% if (post.content.text or post.content.images or post.content.link or post.content.event) %}
+                <div class="post-wrapper">
+                    <div>author: {{post.content.author}}</div>
+                    <div>{{post.time_string}}</div>
+                    <div>{{post.content.text}}</div>
+                    {% if post.content.images %}
+                        {% for image in post.content.images %}
+                            <img class="fb-img" src="{{image}}"/>
+                        {% endfor %}
+                    {% endif %}
+                    {% if post.content.link %}
+                        <a href="{{post.content.link}}">{{post.content.link[:100]}}</a>
+                    {% endif %}
+                    {% if post.content.event %}
+                        <a href="{{post.content.event.event_link}}">{{post.content.event.event_title}}</a>
+                        <div>{{post.content.event.event_info}}</div>
+                    {% endif %}
+                </div>
+            {% endif %}
         {% endfor %}
+        <div class="meta">
+            #posts: {{posts|length}}
+        </div>
     </div>
 </body>
 </html>
