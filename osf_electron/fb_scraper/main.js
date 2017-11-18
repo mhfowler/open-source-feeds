@@ -43,6 +43,8 @@ let tail = null;
 const assetsPath = path.resolve(__dirname, 'assetts');
 const homeDir = os.homedir();
 const pipelinePath = `${homeDir}/Desktop/osf/data/pipeline.json`;
+const osfDir = `${homeDir}/Desktop/osf`;
+const dataDir = `${homeDir}/Desktop/osf/data`;
 const logPath = `${homeDir}/Desktop/osf/data/log.txt`;
 let electronState = {
     mainWindowLoaded: false,
@@ -147,6 +149,16 @@ function loadPipelineState() {
 }
 
 function tailLog() {
+    if (!fs.existsSync(logPath)) {
+        log('++ creating log file');
+        if (!fs.existsSync(osfDir)){
+            fs.mkdirSync(osfDir);
+        }
+        if (!fs.existsSync(dataDir)){
+            fs.mkdirSync(dataDir);
+        }
+        fs.closeSync(fs.openSync(logPath, 'a'));
+    }
     if (!tail) {
         log('++ restarting tail');
         tail = new Tail(logPath, {follow: true});

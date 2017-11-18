@@ -1,0 +1,32 @@
+How To Use The Facebook Scraper
+
+1. Install Docker
+- in your web browser, visit https://store.docker.com/editions/community/docker-ce-desktop-mac
+- download Docker
+- double click the .dmg and follow the installation instructions
+- note, you do not need to sign into Docker after it's installed
+
+2. Right click Open Source Feeds.app and click open (this is necessary because I am an unidentified developer).
+- you may need to enable applications from unidentified developers
+System Preferences -> Security & Privacy -> General -> Allow apps from unidentified developers
+
+The application will take 5 to 10 minutes to start up the first time as it starts the Docker containers it needs to run.
+
+3. Scrape your friends
+- Within the app, click Facebook, then click Friends
+- Enter your facebook username and password and then click "Fetch Friends"
+- It usually takes about 10 minutes, after it's finished, there will be a file in ~/Desktop/osf/data/friends/current.json with a list of your Facebook friends.
+
+4. Scrape posts
+- Within the app, click Facebook, then click Posts
+- Enter an After Date as far back as you like (I'd recommend doing a month or two)
+- Leave Before Date blank (to get posts up to the present)
+- Leave the "download images" checkbox unclicked (image links will work fine for the workshop tomorrow).
+- Enter your facebook username and password and then click "Fetch Posts"
+- Depending on how far back you set the After Date, and how many friends you have, it will effect how long the scraping takes.
+With good wifi, downloading 1200 of my friend's posts over the past year, the scraper took about 6 hours to finish (I'd recommend
+plugging your computer in and letting it run overnight).
+- As the scraper goes, it will put .json files into a folder in ~/Desktop/osf/posts
+--> tomorrow we will use the .json as source data to print out your posts and make our own feeds.
+
+To protect your privacy, this program runs locally on your laptop, your login credentials and data are only viewable by you.

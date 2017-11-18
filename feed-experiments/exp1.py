@@ -3,10 +3,10 @@ import json
 import datetime
 
 BASE_PATH = '/Users/maxfowler/Desktop/pw-posts'
+POSTS_PATH = os.path.join(BASE_PATH, '2017-posts')
 
 
 def load_posts():
-    POSTS_PATH = os.path.join(BASE_PATH, '2017-posts')
     f_names = os.listdir(POSTS_PATH)
     all_posts = []
     for f_name in f_names:
