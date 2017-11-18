@@ -1,25 +1,34 @@
 import sys
+import time
 
 from osf.scrapers.facebook.fbscrape import FbScraper
 
 
 def scroll(fb_username, fb_password):
-    print '++ initiating scroll'
+    print '++ initiating'
+    restart = False
     while True:
         try:
+            print '++ initiating driver'
             fb_scraper = FbScraper(
                 fb_username=fb_username,
                 fb_password=fb_password,
             )
-            try:
-                fb_scraper.get_friends_of_user(user='maxhfowler')
-                fb_scraper.get_posts_by_user(
-                    user='maxhfowler',
-                    max_num_posts_per_user=100
-                )
-            finally:
-                fb_scraper.quit_driver()
+            restart = False
+            while not restart:
+                print '++ starting loop'
+                try:
+                    fb_scraper.get_friends_of_user(user='maxhfowler')
+                    fb_scraper.get_posts_by_user(
+                        user='maxhfowler',
+                        max_num_posts_per_user=100
+                    )
+                except:
+                    restart = True
+                    time.sleep(2)
         except:
+            print '++ error'
+            time.sleep(2)
             continue
 
 
